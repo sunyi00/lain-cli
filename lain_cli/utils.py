@@ -16,7 +16,7 @@ from abc import ABCMeta, abstractmethod
 from tabulate import tabulate
 
 
-LAIN_YAML_PATH = './lain.yaml'
+LAIN_YAML_PATH = os.environ.get('LAIN_YAML', './lain.yaml')
 
 VALID_TAG_PATERN = re.compile(r"^(meta)-(?P<meta_version>\S+-\S+)$")
 
