@@ -11,7 +11,7 @@ requirements = [
     'PyYAML==3.11',
     'argh==0.26.1',
     'humanfriendly==1.29',
-    'requests==2.6.0',
+    'requests>=2.6.1',
     'tabulate==0.7.5',
     'entryclient==2.3.0',
     'lain-sdk==2.3.4',
