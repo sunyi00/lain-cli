@@ -8,7 +8,7 @@ lain = lain_cli.lain:main
 """
 
 requirements = [
-    'PyYAML==3.11',
+    'PyYAML==3.12',
     'argh==0.26.1',
     'humanfriendly==1.29',
     'requests>=2.6.1',
