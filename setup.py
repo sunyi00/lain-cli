@@ -14,8 +14,12 @@ requirements = [
     'requests>=2.6.1',
     'tabulate==0.7.5',
     'entryclient==2.3.0',
-    'lain-sdk==2.3.4',
+    'einplus_lain_sdk>=2.3.4',
     'pytest',
+]
+
+dependency_links=[
+    'git+ssh://git@github.com/ein-plus/lain-sdk.git@master#egg=einplus_lain_sdk-2.3.4'
 ]
 
 setup(
@@ -25,4 +29,5 @@ setup(
     include_package_data=True,
     entry_points=ENTRY_POINTS,
     install_requires=requirements,
+    dependency_links=dependency_links
 )
