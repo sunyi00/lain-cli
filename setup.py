@@ -19,7 +19,7 @@ requirements = [
 ]
 
 setup(
-    name="lain_cli",
+    name="einplus_lain_cli",
     version=__version__,
     packages=find_packages(),
     include_package_data=True,
