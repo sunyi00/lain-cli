@@ -8,16 +8,17 @@ from lain_cli.utils import lain_yaml
 from lain_cli.validate import validate_only_warning
 
 
+@arg('--ignore_prepare', help="ignore prepare image and build a new one")
 @arg('--release', help="build from build image if it exists")
 @arg('--push',    help="tag release and meta image with version and push to registry")
-def build(push=False, release=False):
+def build(ignore_prepare=False, push=False, release=False):
     """
     Build release and meta images
     """
 
     info("Building meta and release images ...")
     validate_only_warning()
-    yml = lain_yaml()
+    yml = lain_yaml(ignore_prepare=ignore_prepare)
     meta_version = yml.repo_meta_version()
     use_prepare = docker.exist(yml.img_names['prepare'])
     use_build = release and docker.exist(yml.img_names['build'])
