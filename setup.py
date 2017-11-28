@@ -15,7 +15,7 @@ requirements = [
     'tabulate==0.7.5',
     'entryclient==2.3.0',
     'einplus_lain_sdk>=2.3.4',
-    'pytest',
+    'pytest<=3.2.5',
 ]
 
 dependency_links=[
