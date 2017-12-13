@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import json
 from argh.decorators import arg
 
 from lain_sdk.yaml.conf import user_config
 from lain_cli.auth import SSO_TOKEN_KEY, SSO_REFRESH_TOKEN_KEY
 from lain_cli.utils import TwoLevelCommandBase, save_config, save_global_config
+
 
 class ConfigCommands(TwoLevelCommandBase):
 
@@ -33,7 +35,7 @@ class ConfigCommands(TwoLevelCommandBase):
             for key in hide_keys:
                 if v.has_key(key):
                     v.pop(key)
-        print json.dumps(configs, sort_keys=True, indent=4)
+        print(json.dumps(configs, sort_keys=True, indent=4))
 
     @classmethod
     @arg('prop', help="property for the special phase, e.g: domain, sso_url")

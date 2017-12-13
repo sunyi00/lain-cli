@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from __future__ import print_function
 import argparse
 import requests, json
 from argh.decorators import arg, aliases
@@ -34,7 +34,7 @@ class BackupCommands(TwoLevelCommandBase):
         route = "api/v2/app/%s/cron/jobs" % appname
         data = cls._request('GET', phase, route, None)
         if data:
-            print json.dumps(data, indent=2)
+            print(json.dumps(data, indent=2))
 
     @classmethod
     @arg('phase', nargs=1, help="lain cluster phase id, can be added by lain config save")
@@ -50,9 +50,9 @@ class BackupCommands(TwoLevelCommandBase):
         route = "api/v2/app/%s/proc/%s/backups/%s?open=true" % (appname, proc[0], path[0])
         data = cls._request('GET', phase[0], route, None)
         if data:
-            print "%-10sFILENAME" % "SIZE"
+            print("%-10sFILENAME" % "SIZE")
             for item in data:
-                print "%-10s%s%s" % (item['size'], item['name'], '/' if item['dir'] else '')
+                print("%-10s%s%s" % (item['size'], item['name'], '/' if item['dir'] else ''))
 
     @classmethod
     @arg('phase', nargs=1, help="lain cluster phase id, can be added by lain config save")
@@ -67,7 +67,7 @@ class BackupCommands(TwoLevelCommandBase):
         route = "api/v2/app/%s/proc/%s/backups?volume=%s" % (appname, proc[0], volume[0])
         data = cls._request('GET', phase[0], route, None)
         if data:
-            print json.dumps(data, indent=2)
+            print(json.dumps(data, indent=2))
 
     @classmethod
     @arg('phase', nargs=1, help="lain cluster phase id, can be added by lain config save")
@@ -82,7 +82,7 @@ class BackupCommands(TwoLevelCommandBase):
         route = "api/v2/app/%s/proc/%s/backups/actions/delete" % (appname, proc[0])
         data = cls._request('POST', phase[0], route, {'files': files})
         if data:
-            print data
+            print(data)
 
     @classmethod
     @arg('phase', nargs=1, help="lain cluster phase id, can be added by lain config save")
@@ -143,7 +143,7 @@ class BackupCommands(TwoLevelCommandBase):
             route += "?total=%d" % num
         data = cls._request('GET', phase[0], route, None)
         if data:
-            print json.dumps(data, indent=2)
+            print(json.dumps(data, indent=2))
 
     @classmethod
     @arg('phase', nargs=1, help="lain cluster phase id, can be added by lain config save")
@@ -157,7 +157,7 @@ class BackupCommands(TwoLevelCommandBase):
         route = "api/v2/app/%s/cron/jobs/%s/actions/run" % (appname, id[0])
         data = cls._request('POST', phase[0], route, None)
         if data:
-            print data
+            print(data)
 
     @classmethod
     def _request(cls, method, phase, url, data):

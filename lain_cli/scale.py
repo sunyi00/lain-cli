@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import humanfriendly
 import requests
 import json
@@ -129,9 +130,12 @@ def validate_parameters(cpu, memory, numinstances):
     if memory is not None:
         memory = str(memory)
         try:
-            humanfriendly.parse_size(memory)
+            if humanfriendly.parse_size(memory) < 4194304:
+                error('invalid parameter: memory (%s) should >= 4M'%memory)
+                exit(1)
         except humanfriendly.InvalidSize:
-            warn('invalid parameter: memory (%s) humanfriendly.parse_size(memory) failed'%memory)
+            error('invalid parameter: memory (%s) humanfriendly.parse_size(memory) failed'%memory)
+            exit(1)
 
     return cpu, memory, numinstances
 
@@ -141,7 +145,7 @@ def render_scale_result(scale_result, output):
         result = scale_result.json()
         msg = result.pop('msg', '')
         if msg:
-            print msg.decode('string_escape')
+            print(msg.decode('string_escape'))
         info("proc status: ")
         render_proc_status(result.get('proc'), get_apptype(), output=output)
     except Exception:

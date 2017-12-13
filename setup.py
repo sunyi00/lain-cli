@@ -10,16 +10,17 @@ lain = lain_cli.lain:main
 requirements = [
     'PyYAML==3.12',
     'argh==0.26.1',
+    'argcomplete==1.9.3',
     'humanfriendly==1.29',
     'requests>=2.6.1',
     'tabulate==0.7.5',
-    'entryclient==2.3.0',
-    'einplus_lain_sdk>=2.3.4',
+    'einplus_lain_sdk>=2.4.1',
+    'entryclient>=2.3.2',
     'pytest<=3.2.5',
 ]
 
-dependency_links=[
-    'git+ssh://git@github.com/ein-plus/lain-sdk.git@master#egg=einplus_lain_sdk-2.3.4'
+dependency_links = [
+    'git+ssh://git@github.com/ein-plus/lain-sdk.git@three#egg=einplus_lain_sdk-2.4.1'
 ]
 
 setup(
