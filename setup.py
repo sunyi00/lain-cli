@@ -16,12 +16,12 @@ requirements = [
     'requests>=2.6.1',
     'tabulate==0.7.5',
     'einplus_lain_sdk>=2.4.1',
-    'einplus_entryclient>=2.3.2',
+    'einplus_entryclient>=2.4.0',
     'pytest<=3.2.5',
 ]
 
 dependency_links = [
-    'git+ssh://git@github.com/ein-plus/entry.git@three#egg=einplus_entryclient-2.3.2',
+    'git+ssh://git@github.com/ein-plus/entry.git@three#egg=einplus_entryclient-2.4.0',
     'git+ssh://git@github.com/ein-plus/lain-sdk.git@three#egg=einplus_lain_sdk-2.4.1'
 ]
 
