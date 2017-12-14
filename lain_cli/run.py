@@ -20,7 +20,7 @@ def gen_run_ctx(proc_name):
         exit(1)
     container_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
     image = yml.img_names['release']
-    port = proc.port.keys()[0] if proc.port.keys() else None
+    port = list(proc.port.keys())[0] if proc.port.keys() else None
     working_dir = proc.working_dir or DOCKER_APP_ROOT
     cmd = proc.cmd
     env = proc.env
