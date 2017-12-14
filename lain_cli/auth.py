@@ -2,8 +2,7 @@
 
 import re
 import requests
-from urllib import urlencode
-from urlparse import urlparse, parse_qs
+from six.moves.urllib.parse import urlparse, urlencode, parse_qs
 
 from lain_sdk.yaml.conf import user_config
 import lain_sdk.mydocker as docker
