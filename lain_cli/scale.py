@@ -146,7 +146,10 @@ def render_scale_result(scale_result, output):
         result = scale_result.json()
         msg = result.pop('msg', '')
         if msg:
-            print(msg.decode('string_escape'))
+            if isinstance(msg, str):
+                print(msg)
+            else:
+                print(msg.decode('string_escape'))
         info("proc status: ")
         render_proc_status(result.get('proc'), get_apptype(), output=output)
     except Exception:
