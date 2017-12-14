@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import json
 import requests
 from argh.decorators import arg
@@ -54,7 +55,10 @@ class SecretCommands(TwoLevelCommandBase):
         show_response = requests.get(lvault_url, headers=auth_header)
         if show_response.status_code < 300:
             info("secret file detail:")
-            print(json.dumps(show_response.json(), encoding="utf-8", ensure_ascii=False, indent=2))
+            if sys.version_info.major == 2:
+                print(json.dumps(show_response.json(), encoding="utf-8", ensure_ascii=False, indent=2))
+            else:
+                print(json.dumps(show_response.json(), ensure_ascii=False, indent=2))
         else:
             error("shit happened : %s" % show_response.text)
 
