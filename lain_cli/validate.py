@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from six import iteritems
-from utils import lain_yaml_data, lain_yaml
+from .utils import lain_yaml_data, lain_yaml
 from lain_sdk.util import error, info, warn
 from lain_sdk.yaml.validator import validate as sdk_validate
 

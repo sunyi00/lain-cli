@@ -62,7 +62,7 @@ def deploy_app(phase, appname, console, auth_header, version, output):
                 deploy_params = {"meta_version": deploy_version}
             else:
                 deploy_version = valid_version
-        
+
         deploy_r = requests.put(app_url, headers=auth_header, json=deploy_params)
     elif app_r.status_code == 404:
         operation = "deploying"
@@ -138,7 +138,7 @@ def deploy_proc(proc, appname, console, auth_header, output):
             result = deploy_r.json()
             msg = result.pop('msg', '')
             if msg:
-                print msg.decode('string_escape')
+                print(msg.decode('string_escape'))
             info("proc status: ")
             render_proc_status(result.get('proc'), output=output)
         except Exception:

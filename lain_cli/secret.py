@@ -10,7 +10,7 @@ from lain_cli.utils import lain_yaml, get_domain
 
 class SecretCommands(TwoLevelCommandBase):
     '''
-    allow add secret files for app, lain will add the secret file into 
+    allow add secret files for app, lain will add the secret file into
     image of the proc when deploying.
     '''
 
@@ -45,12 +45,12 @@ class SecretCommands(TwoLevelCommandBase):
             error('proc {} does not exist'.format(procname))
             exit(1)
 
-        podgroup_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)       
+        podgroup_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
         lvault_url = "http://lvault.%s/v2/secrets?app=%s&proc=%s" % (
             get_domain(phase), yml.appname, podgroup_name)
         if path:
             lvault_url += "&path=%s" % path
-        
+
         show_response = requests.get(lvault_url, headers=auth_header)
         if show_response.status_code < 300:
             info("secret file detail:")
@@ -78,7 +78,7 @@ class SecretCommands(TwoLevelCommandBase):
             try:
                 f = open(file)
                 content = f.read()
-            except Exception, e:
+            except Exception as e:
                 error("error read file %s : %s" % (file, str(e)))
                 exit(1)
 
