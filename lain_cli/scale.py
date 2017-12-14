@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+from six import iteritems
 import humanfriendly
 import requests
 import json
@@ -91,7 +92,7 @@ def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, ou
         render_scale_result(scale_r, output)
 
     info("Outline of scale result: ")
-    for k, v in scale_results.iteritems():
+    for (k, v) in iteritems(scale_results):
         success = v['success']
         output_func = None
         if success:

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+from six import iteritems
 import json
 from argh.decorators import arg
 
@@ -29,7 +30,7 @@ class ConfigCommands(TwoLevelCommandBase):
         """
         configs = user_config.get_config()
         hide_keys = [SSO_TOKEN_KEY, SSO_REFRESH_TOKEN_KEY]
-        for k, v in configs.iteritems():
+        for (k, v) in iteritems(configs):
             if not isinstance(v, dict):
                 continue
             for key in hide_keys:

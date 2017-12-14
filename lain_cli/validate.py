@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+from six import iteritems
 from utils import lain_yaml_data, lain_yaml
 from lain_sdk.util import error, info, warn
 from lain_sdk.yaml.validator import validate as sdk_validate
@@ -19,13 +20,13 @@ def _exist_same_procname_for_depends():
     service_procs, resource_procs = [], []
     if hasattr(yml, 'use_services'):
         use_services = yml.use_services
-        for _, service_list in use_services.iteritems():
+        for (_, service_list) in iteritems(use_services):
             for service in service_list:
                 service_procs.append(service)
 
     if hasattr(yml, 'use_resources'):
         use_resources = yml.use_resources
-        for _, resource_props in use_resources.iteritems():
+        for (_, resource_props) in iteritems(use_resources):
             for resouce_service_proc_name in resource_props['services']:
                 resource_procs.append(resouce_service_proc_name)
 
