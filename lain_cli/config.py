@@ -34,7 +34,7 @@ class ConfigCommands(TwoLevelCommandBase):
             if not isinstance(v, dict):
                 continue
             for key in hide_keys:
-                if v.has_key(key):
+                if key in v:
                     v.pop(key)
         print(json.dumps(configs, sort_keys=True, indent=4))
 
