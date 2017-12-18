@@ -127,7 +127,7 @@ def available_meta_versions(tag_list):
             versions[_timestamp] = meta_version
     ordered_versions = collections.OrderedDict(
         sorted(versions.items(), reverse=True))
-    return ordered_versions.values()
+    return list(ordered_versions.values())
 
 
 def reposit_app(phase, appname, console, auth_header):
