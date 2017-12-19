@@ -30,7 +30,7 @@ from lain_cli.appversion import appversion
 from lain_cli.prepare_update import prepare_update
 
 from lain_cli.test import test
-from lain_cli.run import run, debug, stop, rm
+from lain_cli.run import run, logs, stop
 
 from lain_cli.update import update
 from lain_cli.version import version
@@ -48,9 +48,9 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 one_level_commands = [
-    appversion, attach, build, check, clear, dashboard, debug,
-    deploy, enter, login, logout, meta, prepare, prepare_update,
-    ps, push, refresh, reposit, rm, rmi, run, sync,
+    appversion, attach, build, check, clear, dashboard,
+    deploy, enter, login, logout, logs, meta, prepare, prepare_update,
+    ps, push, refresh, reposit, rmi, run, sync,
     scale, stop, tag, test, undeploy, update, validate, version
 ]
 

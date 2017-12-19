@@ -1,86 +1,177 @@
 # -*- coding: utf-8 -*-
 import os
 from sys import exit
+from jinja2 import Environment
+import subprocess
 from argh.decorators import arg
+from six import iteritems
 
-import lain_sdk.mydocker as docker
-from lain_sdk.util import error, info
+from lain_sdk.util import error, info, meta_version
 from lain_sdk.yaml.conf import DOCKER_APP_ROOT
 from lain_cli.utils import lain_yaml
 
 
 LOCAL_VOLUME_BASE = "/tmp/lain/run"
+LOCAL_COMPOSE_FILE_BASE = "/tmp/lain/compose"
 
 
-def gen_run_ctx(proc_name):
+TMPL_COMPOSE = '''\
+version: '2'
+services:
+{% for service in services %}\
+    {{ service.service_name }}:
+        image: "{{ service.image }}"
+        command: {{ service.cmd }}
+        working_dir: {{ service.working_dir }}
+{% if service.ports %}\
+        ports:
+{% for port in service.ports %}\
+            - "{{ port }}"
+{% endfor %}\
+{% endif %}\
+{% if service.envs %}\
+        environment:
+{% for env in service.envs %}\
+            - {{ env }}
+{% endfor %}\
+{% endif %}\
+{% if service.volumes %}\
+        volumes:
+{% for volume in service.volumes %}\
+            - {{ volume }}
+{% endfor %}\
+{% endif %}\
+{% if depends %}\
+        depends_on:
+{% if redis %}\
+            - redis
+{% endif %}\
+{% if mysql %}\
+            - mysql
+{% endif %}\
+{% endif %}\
+{% endfor %}\
+{% if redis %}\
+    redis:
+        image: "redis:3.2.7"
+{% endif %}\
+{% if mysql %}\
+    mysql:
+        image: mysql:5.6.35
+        command: --character-set-server=utf8 --collation-server=utf8_unicode_ci
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: {{ appname }}
+{% endif %}\
+'''
+
+
+def gen_compose_file_path(appname):
+    path = '{}/{}'.format(LOCAL_COMPOSE_FILE_BASE, appname)
+    file_path = '{}/docker-compose.yaml'.format(path)
+    os.makedirs(path, exist_ok=True)
+    return file_path
+
+
+def gen_compose_file(appname, **params):
+    compose_file = gen_compose_file_path(appname)
+    with open(compose_file, 'w') as f:
+        f.write(Environment().from_string(TMPL_COMPOSE).render(**params))
+    return compose_file
+
+
+def gen_run_ctx():
+    ctx = []
     yml = lain_yaml(ignore_prepare=True)
-    proc = yml.procs.get(proc_name, None)
-    if proc is None:
-        error('proc {} does not exist'.format(proc_name))
-        exit(1)
-    container_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
-    image = yml.img_names['release']
-    port = list(proc.port.keys())[0] if proc.port.keys() else None
-    working_dir = proc.working_dir or DOCKER_APP_ROOT
-    cmd = proc.cmd
-    env = proc.env
-    extra_env = [
-        'TZ=Asia/Shanghai',
-        'LAIN_APPNAME={}'.format(yml.appname),
-        'LAIN_PROCNAME={}'.format(proc.name),
-        'LAIN_DOMAIN=lain.local',
-        'DEPLOYD_POD_INSTANCE_NO=1',
-        'DEPLOYD_POD_NAME={}'.format(container_name),
-        'DEPLOYD_POD_NAMESPACE={}'.format(yml.appname)
-    ]
-    volumes = {}
-    local_proc_volume_base = os.path.join(LOCAL_VOLUME_BASE, container_name)
-    if proc.volumes:
-        for v in proc.volumes:
-            container_path = os.path.join(local_proc_volume_base, v)
-            host_path = local_proc_volume_base + container_path
-            volumes[host_path] = container_path
-    return container_name, image, working_dir, port, cmd, env + extra_env, volumes, local_proc_volume_base
+    for proc in yml.procs.values():
+        full_proc_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
+        service_name = "{}.{}".format(proc.type.name, proc.name)
+        image = yml.img_names['release']
+        ports = list(proc.port.keys()) if proc.port.keys() else None
+        working_dir = proc.working_dir or DOCKER_APP_ROOT
+        cmd = proc.cmd
+        env = proc.env
+        extra_env = [
+            'TZ=Asia/Shanghai',
+            'LAIN_RUN_MODE=sdk',
+            'LAIN_APPNAME={}'.format(yml.appname),
+            'LAIN_PROCNAME={}'.format(proc.name),
+            'LAIN_DOMAIN=lain.local',
+            'DEPLOYD_POD_INSTANCE_NO=1',
+            'DEPLOYD_POD_NAME={}'.format(full_proc_name),
+            'DEPLOYD_POD_NAMESPACE={}'.format(yml.appname)
+        ]
+        envs = env + extra_env
+        volumes = {}
+        local_proc_volume_base = os.path.join(LOCAL_VOLUME_BASE, full_proc_name)
+        if proc.volumes:
+            for v in proc.volumes:
+                container_path = os.path.join(local_proc_volume_base, v)
+                host_path = local_proc_volume_base + container_path
+                volumes[host_path] = container_path
+        proc_volumes = []
+        for (k, v) in iteritems(volumes):
+            proc_volumes.append('{}:{}'.format(k, v))
+
+        proc_params = dict(
+            service_name=service_name,
+            full_proc_name=full_proc_name,
+            image=image,
+            working_dir=working_dir,
+            cmd=cmd,
+            ports=ports,
+            envs=envs or [],
+            volumes=proc_volumes,
+        )
+        ctx.append(proc_params)
+    return yml.appname, ctx
 
 
-@arg('proc_name')
-def run(proc_name):
+def _compose(redis, mysql, verbose):
+    appname, ctx = gen_run_ctx()
+    params = dict(
+        services=ctx,
+        depends=redis or mysql,
+        redis=redis,
+        mysql=mysql
+    )
+    compose_file = gen_compose_file(appname, **params)
+    if verbose:
+        print(compose_file)
+        subprocess.call(['cat', compose_file])
+    return compose_file
+
+
+@arg('--redis', help="depend on redis")
+@arg('--mysql', help="depend on mysql")
+@arg('-v', '--verbose', help="more infomation")
+def run(redis=False, mysql=False, verbose=False):
     """
-    Run proc instance in the local host
+    Run app in the local host with docker-compose
     """
 
-    container_name, image, working_dir, port, cmd, envs, volumes, _ = gen_run_ctx(proc_name)
-    docker.proc_run(container_name, image, working_dir, port, cmd, envs, volumes)
-    info("container name: {}".format(container_name))
-    if port:
-        docker.inspect_port(container_name)
+    compose_file = _compose(redis, mysql, verbose)
+    subprocess.check_call(['docker-compose', '-f', compose_file, 'up', '-d'])
 
 
-@arg('proc_name')
-def debug(proc_name):
+@arg('-f', '--follow', help="keep following logs")
+def logs(follow=False):
     """
-    Debug proc instance in the local host
+    Tailing logs of app in the local host
     """
+    yml = lain_yaml(ignore_prepare=True)
+    compose_file = gen_compose_file_path(yml.appname)
+    cmds = ['docker-compose', '-f', compose_file, 'logs']
+    if follow:
+        cmds.append('-f')
+    subprocess.check_call(cmds)
 
-    container_name, _, _, _, _, _, _, _ = gen_run_ctx(proc_name)
-    docker.proc_debug(container_name)
 
-
-@arg('proc_name')
-def stop(proc_name):
+def stop():
     """
-    Stop proc instance in the local host
-    """
-
-    container_name, _, _, _, _, _, _, _ = gen_run_ctx(proc_name)
-    docker.proc_stop(container_name)
-
-
-@arg('proc_name')
-def rm(proc_name):
-    """
-    Remove proc instance in the local host
+    Stop app in the local host
     """
 
-    container_name, _, _, _, _, _, _, local_proc_volume_base = gen_run_ctx(proc_name)
-    docker.proc_rm(container_name, local_proc_volume_base)
+    yml = lain_yaml(ignore_prepare=True)
+    compose_file = gen_compose_file_path(yml.appname)
+    subprocess.check_call(['docker-compose', '-f', compose_file, 'down'])
