@@ -23,8 +23,8 @@ def _keep_files(image, files):
     remove_container(container_name, kill=False)
 
 
-@arg('results', default=[], nargs='+', type=str)
-def test(results):
+@arg('-r', '--results', nargs='*', type=str)
+def test(results=[]):
     """
     Build test image and run test scripts defined in lain.yaml
     """
