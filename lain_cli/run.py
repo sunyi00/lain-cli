@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
-from sys import exit
 from jinja2 import Environment
 import subprocess
 from argh.decorators import arg
 from six import iteritems
 
-from lain_sdk.util import error, info, meta_version
+from lain_sdk.util import info, mkdir_p
 from lain_sdk.yaml.conf import DOCKER_APP_ROOT
 from lain_cli.utils import lain_yaml
 
@@ -69,7 +68,7 @@ services:
 def gen_compose_file_path(appname):
     path = '{}/{}'.format(LOCAL_COMPOSE_FILE_BASE, appname)
     file_path = '{}/docker-compose.yaml'.format(path)
-    os.makedirs(path, exist_ok=True)
+    mkdir_p(path)
     return file_path
 
 
