@@ -21,8 +21,8 @@ requirements = [
 ]
 
 dependency_links = [
-    'git+ssh://git@github.com/ein-plus/entry.git@three#egg=einplus_entryclient-2.4.0',
-    'git+ssh://git@github.com/ein-plus/lain-sdk.git@three#egg=einplus_lain_sdk-2.4.1'
+    'git+ssh://git@github.com/ein-plus/entry.git@master#egg=einplus_entryclient-2.4.0',
+    'git+ssh://git@github.com/ein-plus/lain-sdk.git@master#egg=einplus_lain_sdk-2.4.1'
 ]
 
 setup(
