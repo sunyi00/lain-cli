@@ -27,6 +27,5 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     entry_points=ENTRY_POINTS,
-    install_requires=requirements,
-    dependency_links=dependency_links
+    install_requires=requirements
 )
