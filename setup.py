@@ -17,7 +17,6 @@ requirements = [
     'tabulate==0.7.5',
     'einplus_lain_sdk>=2.4.1',
     'einplus_entryclient>=2.4.0',
-    'pytest<=3.2.5',
 ]
 
 
