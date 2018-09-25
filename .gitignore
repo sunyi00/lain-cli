@@ -4,3 +4,4 @@
 **/dist
 **/*.egg-info
 **/.ropeproject/
+.pytest_cache
