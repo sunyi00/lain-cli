@@ -1,20 +1,21 @@
 # coding: utf-8
 
-import re
-import os
-import sys
-import json
-import yaml
-import requests
 import collections
-from lain_sdk.yaml.conf import user_config
-import lain_sdk.mydocker as docker
-from lain_sdk.util import error, warn, info
-from lain_sdk.lain_yaml import LainYaml
-from subprocess import check_output
+import json
+import os
+import re
+import sys
 from abc import ABCMeta, abstractmethod
+from subprocess import check_output
+
+import requests
+import yaml
 from tabulate import tabulate
 
+import lain_sdk.mydocker as docker
+from lain_sdk.lain_yaml import LainYaml
+from lain_sdk.util import error, info, warn
+from lain_sdk.yaml.conf import user_config
 
 LAIN_YAML_PATH = os.environ.get('LAIN_YAML', './lain.yaml')
 
@@ -55,7 +56,7 @@ def lain_yaml(ignore_prepare=False):
     if not os.path.exists(LAIN_YAML_PATH):
         error('Missing lain.yaml under current directory')
         sys.exit(1)
-    return LainYaml(LAIN_YAML_PATH, ignore_prepare=ignore_prepare)
+    return LainYaml(lain_yaml_path=LAIN_YAML_PATH, ignore_prepare=ignore_prepare)
 
 
 def check_phase(phase):
@@ -350,6 +351,7 @@ def git_authors(last_id, next_id):
     except Exception:
         return []
 
+
 def git_commits(last_id, next_id):
     git_commits_cmd_format = "git log --cherry-pick --right-only %s...%s '--pretty=format:%%h,%%an [%%s]'"
     git_commits_cmd = git_commits_cmd_format % (last_id, next_id)
@@ -359,7 +361,7 @@ def git_commits(last_id, next_id):
         commits_list = []
         for cmt in commits:
             infos = cmt.split(',')
-            commits_list.append({"id":infos[0], "message": ','.join(infos[1:])})
+            commits_list.append({"id": infos[0], "message": ','.join(infos[1:])})
         return commits_list
     except Exception:
         return []

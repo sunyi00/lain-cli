@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from six import iteritems
+
 import json
+
 from argh.decorators import arg
 
-from lain_sdk.yaml.conf import user_config
-from lain_cli.auth import SSO_TOKEN_KEY, SSO_REFRESH_TOKEN_KEY
+from lain_cli.auth import SSO_REFRESH_TOKEN_KEY, SSO_TOKEN_KEY
 from lain_cli.utils import TwoLevelCommandBase, save_config, save_global_config
+from lain_sdk.yaml.conf import user_config
+from six import iteritems
 
 
 class ConfigCommands(TwoLevelCommandBase):

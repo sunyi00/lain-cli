@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from argh.decorators import arg
+
 from entryclient import EntryClient
-from lain_sdk.util import error, info
 from lain_cli.auth import SSOAccess, authorize_and_check
-from lain_cli.utils import check_phase, lain_yaml, get_domain
+from lain_cli.utils import check_phase, get_domain, lain_yaml
+from lain_sdk.util import error, info
 
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
@@ -30,5 +31,5 @@ def attach(phase, proc_name, instance_no, target=None):
         client.attach_container()
     except KeyboardInterrupt:
         pass
-    except:
+    except Exception:
         error("Server stops the connection. Ask admin for help.")

@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-import sys
 import json
+import sys
+
 import requests
 from argh.decorators import arg
 
-from lain_sdk.util import info, error
-from lain_cli.auth import SSOAccess, get_auth_header, authorize_and_check
-from lain_cli.utils import TwoLevelCommandBase, check_phase
-from lain_cli.utils import lain_yaml, get_domain
+from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.utils import (TwoLevelCommandBase, check_phase, get_domain,
+                            lain_yaml)
+from lain_sdk.util import error, info
+
 
 class SecretCommands(TwoLevelCommandBase):
     '''

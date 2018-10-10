@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
+
 from argh.decorators import arg
+
+from lain_cli.utils import lain_yaml
 from lain_sdk.mydocker import copy_files_from_image
-from lain_cli.utils import lain_yaml, info, error
 
 
 @arg('-r', '--results', nargs='*', type=str)

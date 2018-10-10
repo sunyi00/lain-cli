@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import getpass
+
 from argh.decorators import arg
 
-from lain_sdk.util import warn, info, error
-from lain_cli.auth import sso_login, docker_login, sso_refresh
+import six
+from lain_cli.auth import docker_login, sso_login, sso_refresh
 from lain_cli.utils import check_phase
+from lain_sdk.util import error, info, warn
 
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
@@ -32,7 +34,7 @@ def login(phase, cid=None, secret=None, redirect_uri=None):
     """
 
     check_phase(phase)
-    username = raw_input('SSO Username:')
+    username = six.input('SSO Username:')
     password = getpass.getpass('SSO Password:')
     sso_login_success = sso_login(phase, cid, secret, redirect_uri, username, password)
     if not sso_login_success:

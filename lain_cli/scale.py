@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from six import iteritems
-import humanfriendly
-import requests
+
 import json
 import pprint
+
+import requests
 from argh.decorators import arg
 
-from lain_sdk.util import error, warn, info
-from lain_cli.utils import check_phase, lain_yaml, get_domain, render_proc_status, get_apptype
+import humanfriendly
 from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.utils import (check_phase, get_apptype, get_domain, lain_yaml,
+                            render_proc_status)
+from lain_sdk.util import error, info, warn
+from six import iteritems
 
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
@@ -55,7 +58,7 @@ def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, ou
         info("Please deploy it first")
         exit(1)
     else:
-        error("shit happend: %s"%proc_status.content)
+        error("shit happend: %s" % proc_status.content)
         exit(1)
 
     scale_results = {}
@@ -71,7 +74,7 @@ def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, ou
         info("Scaling......")
         info(str(payload1))
         scale_r = requests.patch(url, headers=auth_header,
-                                     data=json.dumps(payload1), timeout=120)
+                                 data=json.dumps(payload1), timeout=120)
         scale_results['cpu_or_memory'] = {
             'payload': payload1,
             'success': scale_r.status_code < 300
@@ -84,7 +87,7 @@ def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, ou
         info("Scaling...")
         info(str(payload2))
         scale_r = requests.patch(url, headers=auth_header,
-                                    data=json.dumps(payload2), timeout=120)
+                                 data=json.dumps(payload2), timeout=120)
         scale_results['num_instances'] = {
             'payload': payload2,
             'success': scale_r.status_code < 300
@@ -112,30 +115,30 @@ def validate_parameters(cpu, memory, numinstances):
         try:
             numinstances = int(numinstances)
         except ValueError:
-            warn('invalid parameter: num_instances (%s) should be integer'%numinstances)
+            warn('invalid parameter: num_instances (%s) should be integer' % numinstances)
             exit(1)
         if numinstances <= 0:
-            warn('invalid parameter: num_instances (%s) should > 0'%numinstances)
+            warn('invalid parameter: num_instances (%s) should > 0' % numinstances)
             exit(1)
 
     if cpu is not None:
         try:
             cpu = int(cpu)
         except ValueError:
-            warn('invalid parameter: cpu (%s) should be integer'%cpu)
+            warn('invalid parameter: cpu (%s) should be integer' % cpu)
             exit(1)
         if cpu < 0:
-            warn('invalid parameter: cpu (%s) should >= 0'%cpu)
+            warn('invalid parameter: cpu (%s) should >= 0' % cpu)
             exit(1)
 
     if memory is not None:
         memory = str(memory)
         try:
             if humanfriendly.parse_size(memory) < 4194304:
-                error('invalid parameter: memory (%s) should >= 4M'%memory)
+                error('invalid parameter: memory (%s) should >= 4M' % memory)
                 exit(1)
         except humanfriendly.InvalidSize:
-            error('invalid parameter: memory (%s) humanfriendly.parse_size(memory) failed'%memory)
+            error('invalid parameter: memory (%s) humanfriendly.parse_size(memory) failed' % memory)
             exit(1)
 
     return cpu, memory, numinstances
