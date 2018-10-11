@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-import requests
 import json
 import pprint
 from sys import stdout
 from time import sleep
+
+import requests
 from argh.decorators import arg
 
-from lain_sdk.util import error, info
 from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
-from lain_cli.utils import check_phase, get_domain, lain_yaml, is_resource_instance
-from lain_cli.utils import reposit_app, get_version_lists, get_app_state
-from lain_cli.utils import render_app_status, render_proc_status
+from lain_cli.utils import (check_phase, get_app_state, get_domain,
+                            get_version_lists, is_resource_instance, lain_yaml,
+                            render_app_status, render_proc_status, reposit_app)
+from lain_sdk.util import error, info
 
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
@@ -93,6 +94,7 @@ def deploy_app(phase, appname, console, auth_header, version, output):
         error("deploy latest version of %s to %s failed: %s" % (appname, phase, deploy_r.json()['msg']))
         exit(1)
 
+
 def check_deploy_result(operation, console, appname, auth_header):
     i = 0
     while True:
@@ -130,7 +132,7 @@ def deploy_proc(proc, appname, console, auth_header, output):
     url = "http://%s/api/v1/apps/%s/procs/" % (console, appname)
     payload = {'procname': proc}
     deploy_r = requests.post(url, headers=auth_header,
-                                 data=json.dumps(payload), timeout=120)
+                             data=json.dumps(payload), timeout=120)
     if deploy_r.status_code < 300:
         info("deploy proc %s successfully." % proc)
         info("deploy result detail:")
@@ -146,6 +148,7 @@ def deploy_proc(proc, appname, console, auth_header, output):
     else:
         error("deploy proc %s fail : %s" % (proc, deploy_r.json()['msg']))
         exit(1)
+
 
 def print_available_version(version, version_list):
     if not version_list:

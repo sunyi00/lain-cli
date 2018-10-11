@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-import requests
-from argh.decorators import arg
 from operator import attrgetter
 
-from lain_sdk.util import info, error
+import requests
+from argh.decorators import arg
+
 from lain_cli.auth import SSOAccess, get_auth_header
-from lain_cli.utils import get_domain, get_app_state, check_phase
+from lain_cli.utils import check_phase, get_app_state, get_domain
+from lain_sdk.util import error, info
 
 
 class AppInfo(object):

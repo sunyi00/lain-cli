@@ -2,8 +2,8 @@
 from argh.decorators import arg
 
 import lain_sdk.mydocker as docker
-from lain_cli.utils import check_phase
-from lain_cli.utils import lain_yaml, get_meta_versions_from_tags, get_domain
+from lain_cli.utils import (check_phase, get_domain,
+                            get_meta_versions_from_tags, lain_yaml)
 
 
 def get_repo_tags_to_remove(phase):

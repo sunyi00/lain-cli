@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-from argh.decorators import arg
-from entryclient import EntryClient
-from lain_sdk.util import error
-from lain_cli.auth import SSOAccess, authorize_and_check
-from lain_cli.utils import check_phase, lain_yaml, get_domain
-
 import os
+
+from argh.decorators import arg
+
+from entryclient import EntryClient
+from lain_cli.auth import SSOAccess, authorize_and_check
+from lain_cli.utils import check_phase, get_domain, lain_yaml
+from lain_sdk.util import error
 
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
@@ -32,5 +33,5 @@ def enter(phase, proc_name, instance_no, target=None):
     try:
         client = EntryClient(endpoint, header=header_data)
         client.invoke_shell()
-    except:
+    except Exception:
         error("Server stops the connection. Ask admin for help.")

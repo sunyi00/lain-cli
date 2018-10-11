@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-import argparse
-import requests, json
-from argh.decorators import arg, aliases
 
+import argparse
+import json
+
+import requests
+from argh.decorators import aliases, arg
+
+from lain_cli.utils import (TwoLevelCommandBase, check_phase, get_domain,
+                            lain_yaml_data)
 from lain_sdk.util import warn
-from lain_cli.utils import lain_yaml_data, check_phase
-from lain_cli.utils import TwoLevelCommandBase, get_domain
 
 
 class BackupCommands(TwoLevelCommandBase):
@@ -175,6 +178,6 @@ class BackupCommands(TwoLevelCommandBase):
             return None
         try:
             return json.loads(resp.text)
-        except:
+        except Exception:
             warn("not valid json text: %s" % resp.text)
             return ""

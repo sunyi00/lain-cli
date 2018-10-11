@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from argh.decorators import arg
 
+from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.utils import check_phase, get_domain, lain_yaml, reposit_app
 from lain_sdk.util import info
-from lain_cli.auth import SSOAccess, get_auth_header, authorize_and_check
-from lain_cli.utils import check_phase, lain_yaml, reposit_app, get_domain
-from lain_cli.validate import validate_only_warning
 
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
@@ -14,7 +13,6 @@ def reposit(phase):
     """
 
     check_phase(phase)
-    validate_only_warning()
     info("Repositing ...")
 
     yml = lain_yaml(ignore_prepare=True)

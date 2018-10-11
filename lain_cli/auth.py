@@ -1,15 +1,14 @@
 # coding: utf-8
 
 import re
+
 import requests
-from six.moves.urllib.parse import urlparse, urlencode, parse_qs
 
-from lain_sdk.yaml.conf import user_config
 import lain_sdk.mydocker as docker
-from lain_sdk.util import error, warn
-
 from lain_cli.utils import get_domain, save_config
-
+from lain_sdk.util import error, warn
+from lain_sdk.yaml.conf import user_config
+from six.moves.urllib.parse import parse_qs, urlencode, urlparse
 
 SSO_URL_KEY = user_config.sso_url_key
 SSO_TOKEN_KEY = user_config.sso_token_key

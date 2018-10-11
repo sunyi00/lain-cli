@@ -25,7 +25,6 @@ from lain_cli.meta import meta
 from lain_cli.enter import enter
 from lain_cli.clear import clear
 from lain_cli.imagecheck import check
-from lain_cli.validate import validate
 from lain_cli.appversion import appversion
 from lain_cli.prepare_update import prepare_update
 
@@ -51,7 +50,7 @@ one_level_commands = [
     appversion, attach, build, check, clear, dashboard,
     deploy, enter, login, logout, logs, meta, prepare, prepare_update,
     ps, push, refresh, reposit, rmi, run, sync,
-    scale, stop, tag, test, undeploy, update, validate, version
+    scale, stop, tag, test, undeploy, update, version
 ]
 
 two_level_commands = [

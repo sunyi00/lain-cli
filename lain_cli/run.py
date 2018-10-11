@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
-from jinja2 import Environment
 import subprocess
+
 from argh.decorators import arg
-from six import iteritems
 
-from lain_sdk.util import info, mkdir_p
-from lain_sdk.yaml.conf import DOCKER_APP_ROOT
+from jinja2 import Environment
 from lain_cli.utils import lain_yaml
-
+from lain_sdk.util import mkdir_p
+from lain_sdk.yaml.conf import DOCKER_APP_ROOT
+from six import iteritems
 
 LOCAL_VOLUME_BASE = "/tmp/lain/run"
 LOCAL_COMPOSE_FILE_BASE = "/tmp/lain/compose"
