@@ -137,6 +137,7 @@ def reposit_app(phase, appname, console, auth_header):
     repo_url = "http://%s/api/v1/repos/%s/" % (console, appname)
     repos_url = "http://%s/api/v1/repos/" % console
     repo_r = requests.get(repo_url, headers=auth_header)
+    print(repo_r.text)
     if repo_r.status_code == 404:
         repos_r = requests.post(repos_url, headers=auth_header,
                                 data=json.dumps(payload), timeout=120)
@@ -323,12 +324,6 @@ def _render_protal(table, portal_status, output='pretty'):
             render_pod_status(pod_status)
         else:
             render_pod_status(pod_status, last_one=True)
-
-
-def is_resource_instance(appname):
-    if appname.find('.') == -1:
-        return False
-    return True
 
 
 def exit_gracefully(signal, frame):

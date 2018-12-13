@@ -9,8 +9,8 @@ from argh.decorators import arg
 
 from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
 from lain_cli.utils import (check_phase, get_app_state, get_domain,
-                            get_version_lists, is_resource_instance, lain_yaml,
-                            render_app_status, render_proc_status, reposit_app)
+                            get_version_lists, lain_yaml, render_app_status,
+                            render_proc_status, reposit_app)
 from lain_sdk.util import error, info
 
 
@@ -36,8 +36,7 @@ def deploy(phase, version=None, target=None, proc=None, output='pretty'):
     if proc:
         deploy_proc(proc, appname, console, auth_header, output)
     else:
-        if not is_resource_instance(appname):
-            reposit_app(phase, appname, console, auth_header)
+        print(reposit_app(phase, appname, console, auth_header))
         deploy_app(phase, appname, console, auth_header, version, output)
 
 
@@ -52,17 +51,16 @@ def deploy_app(phase, appname, console, auth_header, version, output):
     if app_r.status_code == 200:
         operation = "upgrading"
         deploy_params = None
-        if not is_resource_instance(appname):
-            former_version = app_r.json()["app"]["metaversion"]
-            exist, valid_version = check_meta_version(phase, appname, deploy_version)
-            if not exist:
-                print_available_version(deploy_version, valid_version)
-                exit(1)
+        former_version = app_r.json()["app"]["metaversion"]
+        exist, valid_version = check_meta_version(phase, appname, deploy_version)
+        if not exist:
+            print_available_version(deploy_version, valid_version)
+            exit(1)
 
-            if deploy_version:
-                deploy_params = {"meta_version": deploy_version}
-            else:
-                deploy_version = valid_version
+        if deploy_version:
+            deploy_params = {"meta_version": deploy_version}
+        else:
+            deploy_version = valid_version
 
         deploy_r = requests.put(app_url, headers=auth_header, json=deploy_params)
     elif app_r.status_code == 404:
@@ -91,7 +89,7 @@ def deploy_app(phase, appname, console, auth_header, version, output):
             info("if shit happened, rollback your app by:")
             info("    lain deploy -v {}".format(former_version))
     else:
-        error("deploy latest version of %s to %s failed: %s" % (appname, phase, deploy_r.json()['msg']))
+        error("deploy latest version of %s to %s failed: %s" % (appname, phase, deploy_r.text))
         exit(1)
 
 
