@@ -156,6 +156,8 @@ def reposit_app(phase, appname, console, auth_header):
 def get_proc_state(proc, apptype="app"):
     if apptype == "resource":
         return "healthy"
+    if proc.get('proctype') == 'cron':
+        return "healthy"
     if len(proc.get("pods")) == 0:
         return "unhealthy"
     for pod in proc.get("pods"):
