@@ -4,7 +4,7 @@ from operator import attrgetter
 import requests
 from argh.decorators import arg
 
-from lain_cli.auth import SSOAccess, get_auth_header
+from lain_cli.auth import get_auth_header
 from lain_cli.utils import check_phase, get_app_state, get_domain
 from lain_sdk.util import error, info
 
@@ -37,7 +37,7 @@ def dashboard(phase, sort='appname'):
     print_welecome()
     print_workflows()
     console = "console.%s" % (get_domain(phase))
-    access_token = SSOAccess.get_token(phase)
+    access_token = 'unknown'
     auth_header = get_auth_header(access_token)
 
     print_available_repos(console, auth_header)

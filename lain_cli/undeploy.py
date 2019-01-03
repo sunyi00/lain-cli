@@ -2,7 +2,7 @@
 import requests
 from argh.decorators import arg
 
-from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.auth import get_auth_header
 from lain_cli.utils import check_phase, get_domain, lain_yaml
 from lain_sdk.util import error, info, warn
 
@@ -18,10 +18,9 @@ def undeploy(phase, target=None, proc=None):
     check_phase(phase)
     yml = lain_yaml(ignore_prepare=True)
     appname = target if target else yml.appname
-    authorize_and_check(phase, appname)
 
     console = "console.%s" % get_domain(phase)
-    access_token = SSOAccess.get_token(phase)
+    access_token = 'unknown'
     auth_header = get_auth_header(access_token)
     if proc:
         undeploy_proc(proc, appname, console, auth_header)

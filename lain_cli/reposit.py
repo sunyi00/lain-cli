@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from argh.decorators import arg
 
-from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.auth import get_auth_header
 from lain_cli.utils import check_phase, get_domain, lain_yaml, reposit_app
 from lain_sdk.util import info
 
@@ -16,9 +16,8 @@ def reposit(phase):
     info("Repositing ...")
 
     yml = lain_yaml(ignore_prepare=True)
-    authorize_and_check(phase, yml.appname)
 
-    access_token = SSOAccess.get_token(phase)
+    access_token = 'unknown'
     auth_header = get_auth_header(access_token)
 
     console = "console.%s" % get_domain(phase)

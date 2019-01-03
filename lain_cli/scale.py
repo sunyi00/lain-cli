@@ -8,7 +8,7 @@ import requests
 from argh.decorators import arg
 
 import humanfriendly
-from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.auth import get_auth_header
 from lain_cli.utils import (check_phase, get_apptype, get_domain, lain_yaml,
                             render_proc_status)
 from lain_sdk.util import error, info, warn
@@ -27,7 +27,6 @@ def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, ou
     check_phase(phase)
     yml = lain_yaml(ignore_prepare=True)
     appname = target if target else yml.appname
-    authorize_and_check(phase, appname)
 
     domain = get_domain(phase)
     console = "console.%s" % domain
@@ -35,7 +34,7 @@ def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, ou
         console, appname, proc
     )
 
-    access_token = SSOAccess.get_token(phase)
+    access_token = 'unknown'
     auth_header = get_auth_header(access_token)
 
     cpu, memory, numinstances = validate_parameters(cpu, memory, numinstances)

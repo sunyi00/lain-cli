@@ -5,7 +5,7 @@ import sys
 import requests
 from argh.decorators import arg
 
-from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.auth import get_auth_header
 from lain_cli.utils import (TwoLevelCommandBase, check_phase, get_domain,
                             lain_yaml)
 from lain_sdk.util import error, info
@@ -41,8 +41,7 @@ class SecretCommands(TwoLevelCommandBase):
 
         check_phase(phase)
         yml = lain_yaml(ignore_prepare=True)
-        authorize_and_check(phase, yml.appname)
-        auth_header = get_auth_header(SSOAccess.get_token(phase))
+        auth_header = get_auth_header('unknown')
         proc = yml.procs.get(procname, None)
         if proc is None:
             error('proc {} does not exist'.format(procname))
@@ -90,8 +89,7 @@ class SecretCommands(TwoLevelCommandBase):
 
         check_phase(phase)
         yml = lain_yaml(ignore_prepare=True)
-        authorize_and_check(phase, yml.appname)
-        auth_header = get_auth_header(SSOAccess.get_token(phase))
+        auth_header = get_auth_header('unknown')
         proc = yml.procs.get(procname, None)
         if proc is None:
             error('proc {} does not exist'.format(procname))
@@ -119,8 +117,7 @@ class SecretCommands(TwoLevelCommandBase):
 
         check_phase(phase)
         yml = lain_yaml(ignore_prepare=True)
-        authorize_and_check(phase, yml.appname)
-        auth_header = get_auth_header(SSOAccess.get_token(phase))
+        auth_header = get_auth_header('unknown')
         proc = yml.procs.get(procname, None)
         if proc is None:
             error('proc {} does not exist'.format(procname))

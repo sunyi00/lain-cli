@@ -43,6 +43,33 @@ class TwoLevelCommandBase(object):
         '''return help message string'''
 
 
+def cluster_config(**options):
+    registry_tmpl = "registry.{}"
+    lvault_tmpl = "lvault.{}"
+    console_tmpl = "console.{}"
+    entry_tmpl = "entry.{}"
+
+    registry = options.get('registry', None)
+    lvault = options.get('lvault', None)
+    console = options.get('console', None)
+    entry = options.get('entry', None)
+    phase = options.get('phase', None)
+
+    domain = get_domain(phase)
+
+    registry = registry if registry else registry_tmpl.format(domain)
+    lvault = lvault if lvault else lvault_tmpl.format(domain)
+    console = console if console else console_tmpl.format(domain)
+    entry = entry if entry else entry_tmpl.format(domain)
+
+    return {
+        "registry": registry,
+        "lvault": lvault,
+        "console": console,
+        "entry": entry,
+    }
+
+
 def lain_yaml_data():
     if not os.path.exists(LAIN_YAML_PATH):
         error('Missing lain.yaml under current directory')

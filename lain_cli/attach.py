@@ -2,7 +2,6 @@
 from argh.decorators import arg
 
 from entryclient import EntryClient
-from lain_cli.auth import SSOAccess, authorize_and_check
 from lain_cli.utils import check_phase, get_domain, lain_yaml
 from lain_sdk.util import error, info
 
@@ -17,9 +16,8 @@ def attach(phase, proc_name, instance_no, target=None):
     check_phase(phase)
     yml = lain_yaml(ignore_prepare=True)
     appname = target if target else yml.appname
-    authorize_and_check(phase, appname)
     domain = get_domain(phase)
-    access_token = SSOAccess.get_token(phase)
+    access_token = 'unknown'
     endpoint = "wss://entry.%s/attach" % domain
     header_data = ["access-token: %s" % access_token,
                    "app-name: %s" % appname,

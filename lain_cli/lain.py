@@ -11,14 +11,10 @@ from lain_cli.prepare import prepare
 from lain_cli.build import build
 from lain_cli.tag import tag
 from lain_cli.push import push
-from lain_cli.sync import sync
 from lain_cli.deploy import deploy
 from lain_cli.scale import scale
 from lain_cli.ps import ps
 from lain_cli.undeploy import undeploy
-
-from lain_cli.login import login, refresh
-from lain_cli.logout import logout
 
 from lain_cli.rmi import rmi
 from lain_cli.meta import meta
@@ -31,13 +27,10 @@ from lain_cli.prepare_update import prepare_update
 from lain_cli.test import test
 from lain_cli.run import run, logs, stop
 
-from lain_cli.update import update
 from lain_cli.version import version
 
 from lain_cli.config import ConfigCommands
 from lain_cli.secret import SecretCommands
-from lain_cli.backup import BackupCommands
-from lain_cli.maintainer import MaintainerCommands
 
 from lain_cli.utils import exit_gracefully
 
@@ -48,14 +41,13 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 one_level_commands = [
     appversion, attach, build, check, clear, dashboard,
-    deploy, enter, login, logout, logs, meta, prepare, prepare_update,
-    ps, push, refresh, reposit, rmi, run, sync,
-    scale, stop, tag, test, undeploy, update, version
+    deploy, enter, logs, meta, prepare, prepare_update,
+    ps, push, reposit, rmi, run,
+    scale, stop, tag, test, undeploy, version
 ]
 
 two_level_commands = [
     ConfigCommands, SecretCommands,
-    BackupCommands, MaintainerCommands,
 ]
 
 

@@ -3,7 +3,7 @@
 import requests
 from argh.decorators import arg
 
-from lain_cli.auth import SSOAccess, authorize_and_check, get_auth_header
+from lain_cli.auth import get_auth_header
 from lain_cli.utils import (check_phase, get_domain, lain_yaml,
                             render_app_status)
 from lain_sdk.util import error
@@ -18,10 +18,9 @@ def ps(phase, output='pretty'):
 
     check_phase(phase)
     yml = lain_yaml(ignore_prepare=True)
-    authorize_and_check(phase, yml.appname)
     console = "console.%s" % get_domain(phase)
 
-    access_token = SSOAccess.get_token(phase)
+    access_token = 'unknown'
     auth_header = get_auth_header(access_token)
 
     repo_url = "http://%s/api/v1/repos/%s/" % (console, yml.appname)
