@@ -10,7 +10,7 @@ from argh.decorators import arg
 from lain_cli.auth import get_auth_header
 from lain_cli.utils import (check_phase, get_app_state, get_domain,
                             get_version_lists, lain_yaml, render_app_status,
-                            render_proc_status, reposit_app)
+                            render_proc_status, reposit_app, ClusterConfig)
 from lain_sdk.util import error, info
 
 
@@ -19,7 +19,8 @@ from lain_sdk.util import error, info
 @arg('-t', '--target', help='The target app to deploy, if not set, will be the appname of the working dir')
 @arg('-p', '--proc', help='The proc need to deploy, should not be used with argh -v')
 @arg('-o', '--output', choices=['pretty', 'json', 'json-pretty'], default='pretty')
-def deploy(phase, version=None, target=None, proc=None, output='pretty'):
+@arg('-c', '--console', help='console url')
+def deploy(phase, version=None, target=None, proc=None, output='pretty', console=None):
     """
     Deploy specific proc in the app or the whole app
     """
@@ -28,18 +29,23 @@ def deploy(phase, version=None, target=None, proc=None, output='pretty'):
     yml = lain_yaml(ignore_prepare=True)
     appname = target if target else yml.appname
 
-    console = "console.%s" % get_domain(phase)
+    params = dict(name=phase)
+    if console is not None:
+        params['console'] = console
+
+    cluster_config = ClusterConfig(**params)
+
     access_token = 'unknown'
     auth_header = get_auth_header(access_token)
 
     if proc:
-        deploy_proc(proc, appname, console, auth_header, output)
+        deploy_proc(proc, appname, cluster_config.console, auth_header, output)
     else:
-        print(reposit_app(phase, appname, console, auth_header))
-        deploy_app(phase, appname, console, auth_header, version, output)
+        print(reposit_app(phase, appname, cluster_config.console, auth_header))
+        deploy_app(phase, appname, cluster_config.console, auth_header, version, output, cluster_config=cluster_config)
 
 
-def deploy_app(phase, appname, console, auth_header, version, output):
+def deploy_app(phase, appname, console, auth_header, version, output, cluster_config=None):
     info("Begin deploy app %s to %s ..." % (appname, phase))
 
     app_url = "http://%s/api/v1/apps/%s/" % (console, appname)
@@ -51,7 +57,7 @@ def deploy_app(phase, appname, console, auth_header, version, output):
         operation = "upgrading"
         deploy_params = None
         former_version = app_r.json()["app"]["metaversion"]
-        exist, valid_version = check_meta_version(phase, appname, deploy_version)
+        exist, valid_version = check_meta_version(phase, appname, deploy_version, cluster_config=cluster_config)
         if not exist:
             print_available_version(deploy_version, valid_version)
             exit(1)
@@ -158,8 +164,8 @@ def print_available_version(version, version_list):
         print(version)
 
 
-def check_meta_version(phase, appname, deploy_version=None):
-    version_list = get_version_lists(phase, appname)
+def check_meta_version(phase, appname, deploy_version=None, cluster_config=None):
+    version_list = get_version_lists(phase, appname, cluster_config=cluster_config)
     if not version_list:
         return False, None
     if not deploy_version:

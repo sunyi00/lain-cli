@@ -7,7 +7,7 @@ from argh.decorators import arg
 
 from lain_cli.auth import get_auth_header
 from lain_cli.utils import (TwoLevelCommandBase, check_phase, get_domain,
-                            lain_yaml)
+                            lain_yaml, ClusterConfig)
 from lain_sdk.util import error, info
 
 
@@ -32,7 +32,8 @@ class SecretCommands(TwoLevelCommandBase):
     @classmethod
     @arg('phase', help="lain cluster phase id, can be added by lain config save")
     @arg('procname', help="proc name of the app")
-    def show(cls, phase, procname, path=None):
+    @arg('-l', '--lvault', help='lvault url')
+    def show(cls, phase, procname, path=None, lvault=None):
         """
         show secret file of special procname in different phase
 
@@ -40,6 +41,13 @@ class SecretCommands(TwoLevelCommandBase):
         """
 
         check_phase(phase)
+
+        params = dict(name=phase)
+        if lvault is not None:
+            params['lvault'] = lvault
+
+        cluster_config = ClusterConfig(**params)
+
         yml = lain_yaml(ignore_prepare=True)
         auth_header = get_auth_header('unknown')
         proc = yml.procs.get(procname, None)
@@ -48,8 +56,8 @@ class SecretCommands(TwoLevelCommandBase):
             exit(1)
 
         podgroup_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
-        lvault_url = "http://lvault.%s/v2/secrets?app=%s&proc=%s" % (
-            get_domain(phase), yml.appname, podgroup_name)
+        lvault_url = "http://%s/v2/secrets?app=%s&proc=%s" % (
+            cluster_config.lvault, yml.appname, podgroup_name)
         if path:
             lvault_url += "&path=%s" % path
 
@@ -67,7 +75,8 @@ class SecretCommands(TwoLevelCommandBase):
     @arg('phase', help="lain cluster phase id, can be added by lain config save")
     @arg('procname', help="proc name of the app")
     @arg('path', help='absolute path of config file, eg : /lain/app/config')
-    def add(cls, phase, procname, path, content=None, file=None):
+    @arg('-l', '--lvault', help='lvault url')
+    def add(cls, phase, procname, path, content=None, file=None, lvault=None):
         """
         add secret file for different phase
 
@@ -89,6 +98,13 @@ class SecretCommands(TwoLevelCommandBase):
 
         check_phase(phase)
         yml = lain_yaml(ignore_prepare=True)
+
+        params = dict(name=phase)
+        if lvault is not None:
+            params['lvault'] = lvault
+
+        cluster_config = ClusterConfig(**params)
+
         auth_header = get_auth_header('unknown')
         proc = yml.procs.get(procname, None)
         if proc is None:
@@ -96,8 +112,8 @@ class SecretCommands(TwoLevelCommandBase):
             exit(1)
 
         podgroup_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
-        lvault_url = "http://lvault.%s/v2/secrets?app=%s&proc=%s&path=%s" % (
-            get_domain(phase), yml.appname, podgroup_name, path)
+        lvault_url = "http://%s/v2/secrets?app=%s&proc=%s&path=%s" % (
+            cluster_config.lvault, yml.appname, podgroup_name, path)
         payload = {"content": content}
 
         add_response = requests.put(lvault_url, headers=auth_header, json=payload)
@@ -110,13 +126,21 @@ class SecretCommands(TwoLevelCommandBase):
     @arg('phase', help="lain cluster phase id, can be added by lain config save")
     @arg('procname', help="proc name of the app")
     @arg('path', help='absolute path of config file, eg : /lain/app/config')
-    def delete(cls, phase, procname, path):
+    @arg('-l', '--lvault', help='lvault url')
+    def delete(cls, phase, procname, path, lvault=None):
         """
         delete secret file for different phase
         """
 
         check_phase(phase)
         yml = lain_yaml(ignore_prepare=True)
+
+        params = dict(name=phase)
+        if lvault is not None:
+            params['lvault'] = lvault
+
+        cluster_config = ClusterConfig(**params)
+
         auth_header = get_auth_header('unknown')
         proc = yml.procs.get(procname, None)
         if proc is None:
@@ -124,8 +148,8 @@ class SecretCommands(TwoLevelCommandBase):
             exit(1)
 
         podgroup_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
-        lvault_url = "http://lvault.%s/v2/secrets?app=%s&proc=%s&path=%s" % (
-            get_domain(phase), yml.appname, podgroup_name, path)
+        lvault_url = "http://%s/v2/secrets?app=%s&proc=%s&path=%s" % (
+            cluster_config.lvault, yml.appname, podgroup_name, path)
 
         delete_response = requests.delete(lvault_url, headers=auth_header)
         if delete_response.status_code < 300:

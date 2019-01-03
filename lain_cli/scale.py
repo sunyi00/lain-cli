@@ -10,7 +10,7 @@ from argh.decorators import arg
 import humanfriendly
 from lain_cli.auth import get_auth_header
 from lain_cli.utils import (check_phase, get_apptype, get_domain, lain_yaml,
-                            render_proc_status)
+                            render_proc_status, ClusterConfig)
 from lain_sdk.util import error, info, warn
 from six import iteritems
 
@@ -19,7 +19,8 @@ from six import iteritems
 @arg('proc', help="proc name")
 @arg('-t', '--target', help='The target app to deploy, if not set, will be the appname of the working dir')
 @arg('-o', '--output', choices=['pretty', 'json', 'json-pretty'], default='pretty')
-def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, output='pretty'):
+@arg('-c', '--console', help='console url')
+def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, output='pretty', console=None):
     """
     Scale proc with cpu/memory/num_instances
     """
@@ -28,10 +29,16 @@ def scale(phase, proc, target=None, cpu=None, memory=None, numinstances=None, ou
     yml = lain_yaml(ignore_prepare=True)
     appname = target if target else yml.appname
 
+    params = dict(name=phase)
+    if console is not None:
+        params['console'] = console
+
+    cluster_config = ClusterConfig(**params)
+
     domain = get_domain(phase)
-    console = "console.%s" % domain
+
     url = "http://{}/api/v1/apps/{}/procs/{}/".format(
-        console, appname, proc
+        cluster_config.console, appname, proc
     )
 
     access_token = 'unknown'

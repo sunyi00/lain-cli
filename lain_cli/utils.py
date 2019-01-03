@@ -116,9 +116,13 @@ def get_meta_versions_from_tags(tags):
     return versions
 
 
-def get_version_lists(phase, appname):
+def get_version_lists(phase, appname, cluster_config=None):
+    if cluster_config:
+        registry = cluster_config.registry
+    else:
+        registry = "registry." + get_domain(phase)
     tag_list = docker.get_tag_list_in_registry(
-        "registry." + get_domain(phase), appname)
+        registry, appname)
     version_list = available_meta_versions(tag_list)
     return version_list
 

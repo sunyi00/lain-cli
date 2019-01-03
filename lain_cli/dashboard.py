@@ -5,7 +5,7 @@ import requests
 from argh.decorators import arg
 
 from lain_cli.auth import get_auth_header
-from lain_cli.utils import check_phase, get_app_state, get_domain
+from lain_cli.utils import check_phase, get_app_state, get_domain, ClusterConfig
 from lain_sdk.util import error, info
 
 
@@ -28,20 +28,27 @@ SORT_CHOICES = ['appname', 'apptype', 'metaversion', 'state']
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
 @arg('-s', '--sort', choices=SORT_CHOICES, help="sort type when displaying available apps")
-def dashboard(phase, sort='appname'):
+@arg('-c', '--console', help='console url')
+def dashboard(phase, sort='appname', console=None):
     """
     Basic dashboard of Lain
     """
 
     check_phase(phase)
+
+    params = dict(name=phase)
+    if console is not None:
+        params['console'] = console
+
+    cluster_config = ClusterConfig(**params)
+
     print_welecome()
     print_workflows()
-    console = "console.%s" % (get_domain(phase))
     access_token = 'unknown'
     auth_header = get_auth_header(access_token)
 
-    print_available_repos(console, auth_header)
-    print_available_apps(console, auth_header, sort)
+    print_available_repos(cluster_config.console, auth_header)
+    print_available_apps(cluster_config.console, auth_header, sort)
 
 
 def print_welecome():

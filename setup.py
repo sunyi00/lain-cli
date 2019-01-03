@@ -15,7 +15,7 @@ requirements = [
     'humanfriendly>=4.16.1',
     'requests',
     'tabulate>=0.7.5',
-    'einplus_lain_sdk>=3.0.0b6',
+    'einplus_lain_sdk>=3.1.0.dev1',
     'einplus_entryclient>=2.4.1',
 ]
 
