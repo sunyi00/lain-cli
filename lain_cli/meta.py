@@ -12,4 +12,4 @@ def meta():
     if meta_version is None:
         error("please git commit.")
     else:
-        print(lain_yaml(ignore_prepare=True).meta_version())
+        print(meta_version)
