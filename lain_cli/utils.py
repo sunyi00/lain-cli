@@ -43,33 +43,6 @@ class TwoLevelCommandBase(object):
         '''return help message string'''
 
 
-def cluster_config(**options):
-    registry_tmpl = "registry.{}"
-    lvault_tmpl = "lvault.{}"
-    console_tmpl = "console.{}"
-    entry_tmpl = "entry.{}"
-
-    registry = options.get('registry', None)
-    lvault = options.get('lvault', None)
-    console = options.get('console', None)
-    entry = options.get('entry', None)
-    phase = options.get('phase', None)
-
-    domain = get_domain(phase)
-
-    registry = registry if registry else registry_tmpl.format(domain)
-    lvault = lvault if lvault else lvault_tmpl.format(domain)
-    console = console if console else console_tmpl.format(domain)
-    entry = entry if entry else entry_tmpl.format(domain)
-
-    return {
-        "registry": registry,
-        "lvault": lvault,
-        "console": console,
-        "entry": entry,
-    }
-
-
 def lain_yaml_data():
     if not os.path.exists(LAIN_YAML_PATH):
         error('Missing lain.yaml under current directory')
@@ -101,6 +74,10 @@ def get_domain(phase):
               % (phase, phase, DOMAIN_KEY, phase))
         exit(1)
     return domain
+
+
+def get_named_cluster_config(cluster_name, config_name):
+    return user_config.get_config().get(cluster_name, {}).get(config_name, None)
 
 
 def get_apptype():
@@ -398,3 +375,94 @@ def git_commit_id():
         return commit_id.strip('\n')
     except Exception:
         return ""
+
+
+class ClusterConfig:
+
+    """
+    registry / console / lvault / entry 的 url
+    cli 参数 => lain config => 按照规则生成集群默认 url   层层覆盖
+    也就是 cli 指定参数为最优先
+    """
+
+    registry_tmpl = "registry.{}"
+    lvault_tmpl = "lvault.{}"
+    console_tmpl = "console.{}"
+    entry_tmpl = "entry.{}"
+
+    params_keys = ('registry', 'lvault', 'console', 'entry', 'name')
+
+    def __init__(self, **params):
+        self._registry = None
+        self._lvault = None
+        self._console = None
+        self._entry = None
+        self._name = None
+        self.update(**params)
+
+    @property
+    def name(self):
+        if self._name is not None:
+            return self._name
+        else:
+            raise Exception('no cluster name')
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    @property
+    def domain(self):
+        return get_domain(self.name)
+
+    @property
+    def registry(self):
+        if self._registry is not None:
+            return self._registry
+        else:
+            return get_named_cluster_config(self.name, 'registry') or self.registry_tmpl.format(self.domain)
+
+    @registry.setter
+    def registry(self, registry):
+        self._registry = registry
+
+    @property
+    def lvault(self):
+        if self._lvault is not None:
+            return self._lvault
+        else:
+            return get_named_cluster_config(self.name, 'lvault') or self.lvault_tmpl.format(self.domain)
+
+    @lvault.setter
+    def lvault(self, lvault):
+        self._lvault = lvault
+
+    @property
+    def console(self):
+        if self._console is not None:
+            return self._console
+        else:
+            return get_named_cluster_config(self.name, 'console') or self.console_tmpl.format(self.domain)
+
+    @console.setter
+    def console(self, console):
+        self._console = console
+
+    @property
+    def entry(self):
+        if self._entry is not None:
+            return self._entry
+        else:
+            return get_named_cluster_config(self.name, 'entry') or self.entry_tmpl.format(self.domain)
+
+    @entry.setter
+    def entry(self, entry):
+        self._entry = entry
+
+    def update(self, **params):
+        for key in ClusterConfig.params_keys:
+            if key in params.keys():
+                setattr(self, key, params[key])
+
+    def __repr__(self):
+        return '<ClusterConfig: {}>'.format(self._name)
