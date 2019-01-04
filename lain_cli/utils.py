@@ -199,7 +199,6 @@ def render_app_status(app_status, output='pretty'):
     table = [
         ['appname', app_status.get('appname')],
         ['state', get_app_state(app_status)],
-        ['apptype', app_status.get('apptype')],
         ['metaversion', app_status.get('metaversion')],
         ['updatetime', app_status.get('updatetime')],
         ['deploy_error', app_status.get('deployerror')]
