@@ -143,7 +143,7 @@ def deploy_proc(proc, appname, console, auth_header, output):
             result = deploy_r.json()
             msg = result.pop('msg', '')
             if msg:
-                print(msg.decode('string_escape'))
+                print(msg)
             info("proc status: ")
             render_proc_status(result.get('proc'), output=output)
         except Exception:

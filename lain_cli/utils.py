@@ -241,7 +241,7 @@ def render_app_status(app_status, output='pretty'):
             render_app_status(instance, output=output)
 
 
-def render_proc_status(proc_status, apptype, output='pretty'):
+def render_proc_status(proc_status, apptype='app', output='pretty'):
 
     table = [
         ['procname', proc_status.get('procname')],
