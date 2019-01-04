@@ -9,7 +9,7 @@ from argh.decorators import arg
 
 import humanfriendly
 from lain_cli.auth import get_auth_header
-from lain_cli.utils import (check_phase, get_apptype, get_domain, lain_yaml,
+from lain_cli.utils import (check_phase, get_domain, lain_yaml,
                             render_proc_status, ClusterConfig)
 from lain_sdk.util import error, info, warn
 from six import iteritems
@@ -160,6 +160,6 @@ def render_scale_result(scale_result, output):
             else:
                 print(msg.decode('string_escape'))
         info("proc status: ")
-        render_proc_status(result.get('proc'), get_apptype(), output=output)
+        render_proc_status(result.get('proc'), output=output)
     except Exception:
         pprint.pprint(scale_result.content)

@@ -80,12 +80,6 @@ def get_named_cluster_config(cluster_name, config_name):
     return user_config.get_config().get(cluster_name, {}).get(config_name, None)
 
 
-def get_apptype():
-    with open(LAIN_YAML_PATH, 'r') as f:
-        y = yaml.safe_load(f.read())
-    return y.get('apptype', 'app')
-
-
 def get_meta_version_from_tag(tag):
     if tag is None:
         return None
@@ -161,9 +155,7 @@ def reposit_app(phase, appname, console, auth_header):
         exit(1)
 
 
-def get_proc_state(proc, apptype="app"):
-    if apptype == "resource":
-        return "healthy"
+def get_proc_state(proc):
     if proc.get('proctype') == 'cron':
         return "healthy"
     if len(proc.get("pods")) == 0:
@@ -178,7 +170,7 @@ def get_app_state(app):
     if not app or app.get("deployerror") or len(app.get("procs")) == 0:
         return "unhealthy"
     for proc in app.get("procs"):
-        if get_proc_state(proc, app.get("apptype")) == "unhealthy":
+        if get_proc_state(proc) == "unhealthy":
             return "unhealthy"
     if app.get("useservices"):
         for service in app.get("useservices"):
@@ -216,8 +208,7 @@ def render_app_status(app_status, output='pretty'):
     if app_status.get('procs'):
         info('Proc list:')
         for proc_status in app_status.get("procs"):
-            render_proc_status(proc_status, app_status.get(
-                'apptype'), output=output)
+            render_proc_status(proc_status, output=output)
 
     if app_status.get('portals'):
         info('Portal list:')
@@ -241,12 +232,12 @@ def render_app_status(app_status, output='pretty'):
             render_app_status(instance, output=output)
 
 
-def render_proc_status(proc_status, apptype='app', output='pretty'):
+def render_proc_status(proc_status, output='pretty'):
 
     table = [
         ['procname', proc_status.get('procname')],
         ['proctype', proc_status.get('proctype')],
-        ['state', get_proc_state(proc_status, apptype)],
+        ['state', get_proc_state(proc_status)],
         ['memory', proc_status.get('memory')],
         ['cpu', proc_status.get('cpu')],
         ['image', proc_status.get('image')],
