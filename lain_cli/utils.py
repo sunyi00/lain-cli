@@ -167,19 +167,13 @@ def get_proc_state(proc):
 
 
 def get_app_state(app):
-    if not app or app.get("deployerror") or len(app.get("procs")) == 0:
+    if not app or app.get("deployerror"):
         return "unhealthy"
+    if len(app.get("procs")) == 0:
+        return "N/A"
     for proc in app.get("procs"):
         if get_proc_state(proc) == "unhealthy":
             return "unhealthy"
-    if app.get("useservices"):
-        for service in app.get("useservices"):
-            if get_app_state(service.get("service")) != "healthy":
-                return "missing service"
-    if app.get("useresources"):
-        for resource in app.get("useresources"):
-            if get_app_state(resource.get("resourceinstance")) != "healthy":
-                return "missing resource"
     return "healthy"
 
 

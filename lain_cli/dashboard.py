@@ -46,7 +46,7 @@ def dashboard(phase, sort='appname', console=None):
     access_token = 'unknown'
     auth_header = get_auth_header(access_token)
 
-    print_available_repos(cluster_config.console, auth_header)
+    # print_available_repos(cluster_config.console, auth_header)
     print_available_apps(cluster_config.console, auth_header, sort)
 
 
