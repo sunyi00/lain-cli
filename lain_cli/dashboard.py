@@ -14,7 +14,6 @@ class AppInfo(object):
 
     def __init__(self, app_info):
         self.appname = app_info.get("appname")
-        self.apptype = app_info.get("apptype")
         self.metaversion = app_info.get("metaversion")
         self.state = get_app_state(app_info)
 
@@ -23,7 +22,7 @@ class AppInfo(object):
         return AppInfo(app_info)
 
 
-SORT_CHOICES = ['appname', 'apptype', 'metaversion', 'state']
+SORT_CHOICES = ['appname', 'metaversion', 'state']
 
 
 @arg('phase', help="lain cluster phase id, can be added by lain config save")
@@ -71,8 +70,8 @@ def render_repos(repos):
 def render_apps(apps, sort_type):
     apps.sort(key=attrgetter(sort_type))
     for app in apps:
-        print("{:<30}  {:<20}  {:<60}  {:<10}".format(
-            app.appname, app.apptype, app.metaversion, app.state))
+        print("{:<30}  {:<60}  {:<10}".format(
+            app.appname, app.metaversion, app.state))
 
 
 def print_available_repos(console, auth_header):
@@ -91,8 +90,8 @@ def print_available_apps(console, auth_header, sort_type):
     apps_url = "http://%s/api/v1/apps/" % console
     apps_res = requests.get(apps_url, headers=auth_header)
     info('Available apps are :')
-    print("{:<30}  {:<20}  {:<60}  {:<10}".format(
-        "Appname", "AppType", "MetaVersion", "State"))
+    print("{:<30}  {:<60}  {:<10}".format(
+        "Appname", "MetaVersion", "State"))
     if apps_res.status_code == 200:
         apps = apps_res.json()["apps"]
         render_apps([AppInfo.new(app) for app in apps], sort_type)
