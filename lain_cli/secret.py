@@ -7,7 +7,7 @@ from argh.decorators import arg
 
 from lain_cli.auth import get_auth_header
 from lain_cli.utils import (TwoLevelCommandBase, check_phase, get_domain,
-                            lain_yaml, ClusterConfig)
+                            lain_yaml, ClusterConfig, render_secret)
 from lain_sdk.util import error, info
 
 
@@ -67,7 +67,7 @@ class SecretCommands(TwoLevelCommandBase):
             if sys.version_info.major == 2:
                 print(json.dumps(show_response.json(), encoding="utf-8", ensure_ascii=False, indent=2))
             else:
-                print(json.dumps(show_response.json(), ensure_ascii=False, indent=2))
+                render_secret(show_response.json())
         else:
             error("shit happened : %s" % show_response.text)
 

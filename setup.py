@@ -8,6 +8,7 @@ lain = lain_cli.lain:main
 """
 
 requirements = [
+    'arrow',
     'six>=1.9.0',
     'PyYAML>=3.12',
     'argh>=0.26.1',

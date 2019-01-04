@@ -6,3 +6,4 @@
 **/.ropeproject/
 .pytest_cache
 .envrc
+.vscode

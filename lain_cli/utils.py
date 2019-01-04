@@ -10,6 +10,7 @@ from subprocess import check_output
 
 import requests
 import yaml
+import arrow
 from tabulate import tabulate
 
 import lain_sdk.mydocker as docker
@@ -454,3 +455,14 @@ class ClusterConfig:
 
     def __repr__(self):
         return '<ClusterConfig: {}>'.format(self._name)
+
+
+def render_secret(data):
+    for d in data:
+        table = [
+            ['time', str(arrow.get(d['timestamp']).to("+08:00"))],
+            ['path', d['path']]
+        ]
+        print(tabulate(table, tablefmt='psql'))
+        print('')
+        print(d['content'])
