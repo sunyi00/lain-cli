@@ -7,7 +7,7 @@ test: clean
 clean:
 	- find . -iname "*__pycache__" | xargs rm -rf
 	- find . -iname "*.pyc" | xargs rm -rf
-	- rm -rf dist build lain_cli.egg-info
+	- rm -rf dist build lain_cli.egg-info einplus_lain_cli.egg-info .coverage htmlcov unittest.xml
 
 overwrite-package:
 	devpi login root --password=$(PYPI_ROOT_PASSWORD)
