@@ -67,13 +67,13 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>if [ -f "lain.poc.yaml" ]; then
+      <command>if [ -f &quot;lain.poc.yaml&quot; ]; then
     echo export LAIN_YAML=./lain.poc.yaml
 else
     echo export LAIN_YAML=./lain.yaml
 fi
-echo "LAIN_YAML: "${LAIN_YAML}
-lain build && lain tag poc && lain push poc && lain deploy poc</command>
+echo &quot;LAIN_YAML: &quot;${LAIN_YAML}
+lain build &amp;&amp; lain tag poc &amp;&amp; lain push poc &amp;&amp; lain deploy poc</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers/>
