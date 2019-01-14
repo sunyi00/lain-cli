@@ -22,7 +22,16 @@ def get_jenkins():
 
 
 def gen_jobname(appname, phase, ci_type=None):
-    if not ci_type or ci_type == 'brain':
+    if ci_type == 'lib':
+        if phase == 'master':
+            return 'lib--{}'.format(appname)
+        elif phase == 'pr':
+            return 'lib--{}-pr'.format(appname)
+        elif phase == 'packaging':
+            return 'packaging--{}'.format(appname)
+        else:
+            raise Exception("invalid job phase: {}".format(phase))
+    else:
         if phase == 'master':
             return appname
         elif phase == 'pr':
@@ -32,23 +41,7 @@ def gen_jobname(appname, phase, ci_type=None):
         elif phase == 'pipeline':
             return 'pipeline-{}'.format(appname)
         else:
-            raise "invalid job phase: {}".format(phase)
-    elif ci_type == 'lib':
-        if phase == 'master':
-            return 'lib--{}'.format(appname)
-        elif phase == 'pr':
-            return 'lib--{}-pr'.format(appname)
-        elif phase == 'packaging':
-            return 'packaging--{}'.format(appname)
-        else:
-            raise "invalid job phase: {}".format(phase)
-    elif ci_type == 'packaging':
-        if phase == 'packaging':
-            return 'packaging--{}'.format(appname)
-        else:
-            raise "invalid job phase: {}".format(phase)
-    else:
-        raise "invalid ci_type: {}".format(ci_type)
+            raise Exception("invalid job phase: {}".format(phase))
 
 
 def create_job(appname, phase, ci_type, tmpl_dir=''):
