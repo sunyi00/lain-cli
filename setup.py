@@ -16,6 +16,7 @@ requirements = [
     'humanfriendly>=4.16.1',
     'requests',
     'tabulate>=0.7.5',
+    'jenkinsapi==0.3.3',
     'einplus_lain_sdk>=3.2.0.dev1',
     'einplus_entryclient>=2.4.1',
 ]
@@ -27,5 +28,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     entry_points=ENTRY_POINTS,
-    install_requires=requirements
+    install_requires=requirements,
+    zip_safe=False
 )

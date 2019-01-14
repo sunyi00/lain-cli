@@ -1,0 +1,4 @@
+graft lain_cli/tmpl
+
+global-exclude __pycache__
+global-exclude *.py[co]

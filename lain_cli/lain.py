@@ -31,6 +31,7 @@ from lain_cli.version import version
 
 from lain_cli.config import ConfigCommands
 from lain_cli.secret import SecretCommands
+from lain_cli.ci import CiCommands
 
 from lain_cli.utils import exit_gracefully
 
@@ -47,7 +48,7 @@ one_level_commands = [
 ]
 
 two_level_commands = [
-    ConfigCommands, SecretCommands,
+    ConfigCommands, SecretCommands, CiCommands,
 ]
 
 

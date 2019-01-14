@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.10">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty/>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.25">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>10</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.SCMTrigger>
+          <spec>H/2 * * * *</spec>
+          <ignorePostCommitHooks>false</ignorePostCommitHooks>
+        </hudson.triggers.SCMTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.29">
+    <script>#!groovy
+@Library(&apos;ein-jenkins-pipeline-shared&apos;) _
+
+
+pipeline {
+    agent {
+        label &apos;lain&apos;
+    }
+    stages {
+        stage (&apos;sync code&apos;) {
+            steps {
+                git poll: true, credentialsId: &apos;50e5161b-a7d3-4e0d-8638-2c57c8d29de0&apos;, url: &apos;https://github.com/{{ repo }}.git&apos;
+                script {
+                    env.GIT_COMMIT = sh(returnStdout: true, script: &apos;git rev-parse HEAD&apos;).trim()
+                }
+                echo env.GIT_COMMIT
+            }
+        }
+        stage (&apos;master build with test&apos;) {
+            steps {
+                script {
+                    env.MASTER_BUILD_PASSED = &apos;0&apos;
+                }
+                echo env.GIT_COMMIT
+                build job: &apos;{{ appname }}&apos;, parameters: [string(name: &apos;GIT_COMMIT&apos;, value: env.GIT_COMMIT)]
+                script {
+                    env.MASTER_BUILD_PASSED = &apos;1&apos;
+                }
+            }
+        }
+        stage (&apos;wait for confirm&apos;) {
+            steps {
+                script {
+                    env.CONFIRMED = &apos;0&apos;
+                }
+                bearyChat(&quot;Wait for CONFIRM: ${env.GIT_COMMIT}&quot;, &apos;WAITING&apos;, &apos;dev&apos;)
+                timeout(time:1, unit:&apos;MINUTES&apos;) {
+                    input message: &apos;Approve dev deployment?&apos;
+                    script {
+                        env.CONFIRMED = &apos;1&apos;
+                    }
+                }
+            }
+        }
+        stage (&apos;dev deployment&apos;) {
+            steps {
+                script {
+                    env.DEV_DEPLOYMENT = &apos;0&apos;
+                }
+                echo env.GIT_COMMIT
+                build job: &apos;deployment-dev-{{ appname }}&apos;, parameters: [string(name: &apos;GIT_COMMIT&apos;, value: env.GIT_COMMIT)]
+                script {
+                    env.DEV_DEPLOYMENT = &apos;1&apos;
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo env.MASTER_BUILD_PASSED
+            echo env.CONFIRMED
+            echo env.DEV_DEPLOYMENT
+            script {
+                if (env.MASTER_BUILD_PASSED == &apos;0&apos;) {
+                    bearyChat(&quot;Master build failed: ${env.GIT_COMMIT}&quot;, currentBuild.result, &apos;dev&apos;)
+                } else if (env.CONFIRMED == &apos;0&apos;) {
+                    bearyChat(&quot;Pipeline finished without Dev Deployment: ${env.GIT_COMMIT}&quot;, &apos;ABORTED&apos;, &apos;dev&apos;)
+                } else if (env.DEV_DEPLOYMENT == &apos;0&apos;) {
+                    bearyChat(&quot;Dev deployment failed: ${env.GIT_COMMIT}&quot;, currentBuild.result, &apos;dev&apos;)
+                } else {
+                    bearyChat(&quot;Pipeline finished: ${env.GIT_COMMIT}&quot;, currentBuild.result, &apos;dev&apos;)
+                }
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+</flow-definition>

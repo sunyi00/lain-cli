@@ -1,0 +1,89 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>detect new tag and devpi upload to pypi.in.ein.plus</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.29.0">
+      <projectUrl>https://github.com/{{ repo }}/</projectUrl>
+      <displayName></displayName>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.28">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>100</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.8.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <refspec>+refs/tags/*:refs/remotes/origin/tags/*</refspec>
+        <url>https://github.com/{{ repo }}.git</url>
+        <credentialsId>50e5161b-a7d3-4e0d-8638-2c57c8d29de0</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/tags/*</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <browser class="hudson.plugins.git.browser.GithubWeb">
+      <url>https://github.com/{{ repo }}</url>
+    </browser>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.SubmoduleOption>
+        <disableSubmodules>false</disableSubmodules>
+        <recursiveSubmodules>true</recursiveSubmodules>
+        <trackingSubmodules>false</trackingSubmodules>
+        <reference></reference>
+        <parentCredentials>false</parentCredentials>
+      </hudson.plugins.git.extensions.impl.SubmoduleOption>
+    </extensions>
+  </scm>
+  <assignedNode>lain</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.SCMTrigger>
+      <spec>H/2 * * * *</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>devpi upload || ( eindevpi.sh &amp;&amp; devpi upload )</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <jenkins.plugins.bearychat.BearyChatNotifier plugin="bearychat@3.0.2">
+      <webhook></webhook>
+      <buildServerUrl>http://jenkins.in.ein.plus/</buildServerUrl>
+      <channel></channel>
+      <customStartMessage></customStartMessage>
+      <customEndMessage></customEndMessage>
+      <isNotifyOnStarting>true</isNotifyOnStarting>
+      <isNotifyOnSuccess>true</isNotifyOnSuccess>
+      <isNotifyOnAborted>true</isNotifyOnAborted>
+      <isNotifyOnNotBuilt>true</isNotifyOnNotBuilt>
+      <isNotifyOnUnstable>true</isNotifyOnUnstable>
+      <isNotifyOnFailure>true</isNotifyOnFailure>
+      <isNotifyOnBackToNormal>true</isNotifyOnBackToNormal>
+      <isNotifyRepeatedFailure>false</isNotifyRepeatedFailure>
+      <isIncludeCustomMessage>false</isIncludeCustomMessage>
+    </jenkins.plugins.bearychat.BearyChatNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>
