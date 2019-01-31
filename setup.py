@@ -9,6 +9,7 @@ lain = lain_cli.lain:main
 
 requirements = [
     'arrow',
+    'jinja2',
     'six>=1.9.0',
     'PyYAML>=3.12',
     'argh>=0.26.1',
@@ -21,7 +22,6 @@ requirements = [
     'einplus_entryclient>=2.4.1',
 ]
 
-
 setup(
     name="einplus_lain_cli",
     version=__version__,
@@ -29,5 +29,4 @@ setup(
     include_package_data=True,
     entry_points=ENTRY_POINTS,
     install_requires=requirements,
-    zip_safe=False
-)
+    zip_safe=False)
