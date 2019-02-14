@@ -87,7 +87,11 @@ def gen_run_ctx():
             continue
         full_proc_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
         service_name = "{}.{}".format(proc.type.name, proc.name)
-        image = yml.img_names['release']
+        # FIXME: so rude
+        if proc.image.endswith(":" + yml.img_names['release']):
+            image = yml.img_names['release']
+        else:
+            image = proc.image
         ports = list(proc.port.keys()) if proc.port.keys() else None
         working_dir = proc.working_dir or DOCKER_APP_ROOT
         cmd = proc.cmd
@@ -149,6 +153,8 @@ def _compose(redis, mysql, verbose):
 def run(redis=False, mysql=False, verbose=False):
     """
     Run app in the local host with docker-compose
+
+    PRECONDITION:  lain build
     """
 
     compose_file = _compose(redis, mysql, verbose)
