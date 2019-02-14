@@ -83,6 +83,8 @@ def gen_run_ctx():
     ctx = []
     yml = lain_yaml(ignore_prepare=True)
     for proc in yml.procs.values():
+        if proc.type.name not in ['web', 'worker']:
+            continue
         full_proc_name = "{}.{}.{}".format(yml.appname, proc.type.name, proc.name)
         service_name = "{}.{}".format(proc.type.name, proc.name)
         image = yml.img_names['release']
