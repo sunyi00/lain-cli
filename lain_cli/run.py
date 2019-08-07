@@ -48,6 +48,12 @@ services:
 {% if mysql %}\
             - mysql
 {% endif %}\
+{% if minio %}\
+            - minio
+{% endif %}\
+{% if elasticsearch %}\
+            - elasticsearch
+{% endif %}\
 {% endif %}\
 {% endfor %}\
 {% if redis %}\
@@ -62,6 +68,21 @@ services:
             MYSQL_ROOT_PASSWORD: root
             MYSQL_DATABASE: {{ appname }}
 {% endif %}\
+{% if minio %}\
+    minio:
+        image: "minio/minio:RELEASE.2018-05-16T23-35-33Z"
+        command: server /data
+        environment:
+            MINIO_ACCESS_KEY: TESTACCESSKEY
+            MINIO_SECRET_KEY: TESTSECRETKEY
+{% endif %}\
+{% if elasticsearch %}\
+    elasticsearch:
+        image: "registry.lain.ein.plus/ein-enterprise/elasticsearch:2.4.1-ik-20180906p3"
+        command: /bin/bash /run.sh
+        environment:
+            ES_HEAP_SIZE: 256M
+{% endif %}\
 '''
 
 
@@ -75,11 +96,24 @@ def gen_compose_file_path(appname):
 def gen_compose_file(appname, **params):
     compose_file = gen_compose_file_path(appname)
     with open(compose_file, 'w') as f:
-        f.write(Environment().from_string(TMPL_COMPOSE).render(**params))
+        f.write(Environment().from_string(TMPL_COMPOSE).render(appname=appname, **params))
     return compose_file
 
 
-def gen_run_ctx():
+def merge_kv_list(origins, overrides, splitter='='):
+    if not overrides:
+        return origins
+    kv_dict = {}
+    for o in origins:
+        name, value = o.strip().split(splitter, 1)
+        kv_dict[name] = value
+    for r in overrides:
+        name, value = r.strip().split(splitter, 1)
+        kv_dict[name] = value
+    return ["{}{}{}".format(k, splitter, v) for k, v in kv_dict.items()]
+
+
+def gen_run_ctx(override_envs=None, override_volumes=None):
     ctx = []
     yml = lain_yaml(ignore_prepare=True)
     for proc in yml.procs.values():
@@ -125,39 +159,43 @@ def gen_run_ctx():
             working_dir=working_dir,
             cmd=cmd,
             ports=ports,
-            envs=envs or [],
-            volumes=proc_volumes,
+            envs=merge_kv_list(envs, override_envs) or [],
+            volumes=merge_kv_list(proc_volumes, override_volumes, splitter=':') or [],
         )
         ctx.append(proc_params)
     return yml.appname, ctx
 
 
-def _compose(redis, mysql, verbose):
-    appname, ctx = gen_run_ctx()
+def _compose(redis, mysql, minio, elasticsearch, envs, volumes):
+    appname, ctx = gen_run_ctx(override_envs=envs, override_volumes=volumes)
     params = dict(
         services=ctx,
-        depends=redis or mysql,
+        depends=redis or mysql or minio or elasticsearch,
         redis=redis,
-        mysql=mysql
+        mysql=mysql,
+        minio=minio,
+        elasticsearch=elasticsearch
     )
     compose_file = gen_compose_file(appname, **params)
-    if verbose:
-        print(compose_file)
-        subprocess.call(['cat', compose_file])
+    print(compose_file)
+    subprocess.call(['cat', compose_file])
     return compose_file
 
 
 @arg('--redis', help="depend on redis")
 @arg('--mysql', help="depend on mysql")
-@arg('-v', '--verbose', help="more infomation")
-def run(redis=False, mysql=False, verbose=False):
+@arg('--minio', help="depend on minio")
+@arg('--elasticsearch', help="depend on elasticsearch")
+@arg('-e', '--envs', nargs='*')
+@arg('-v', '--volumes', nargs='*')
+def run(redis=False, mysql=False, minio=False, elasticsearch=False, envs=None, volumes=None):
     """
     Run app in the local host with docker-compose
 
     PRECONDITION:  lain build
     """
 
-    compose_file = _compose(redis, mysql, verbose)
+    compose_file = _compose(redis, mysql, minio, elasticsearch, envs, volumes)
     subprocess.check_call(['docker-compose', '-f', compose_file, 'up', '-d'])
 
 
@@ -182,3 +220,5 @@ def stop():
     yml = lain_yaml(ignore_prepare=True)
     compose_file = gen_compose_file_path(yml.appname)
     subprocess.check_call(['docker-compose', '-f', compose_file, 'down'])
+    subprocess.check_call(['docker', 'volume', 'prune', '-f'])
+    subprocess.check_call(['docker', 'network', 'prune', '-f'])
