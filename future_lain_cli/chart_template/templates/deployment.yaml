@@ -1,0 +1,67 @@
+{{- range $deployName, $deployment := .Values.deployments  }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Values.appname }}-{{ $deployName }}
+  labels:
+    {{- include "chart.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ $deployment.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/instance: {{ $.Values.appname }}-{{ $deployName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ $.Values.appname }}-{{ $deployName }}
+        {{- include "chart.selectorLabels" $ | nindent 8 }}
+    spec:
+      serviceAccountName: default
+      securityContext:
+        {{- toYaml $deployment.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $deployName }}
+          command:
+            {{- toYaml $deployment.command | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ $.Values.appname }}-env
+          env:
+            {{- if hasKey $.Values "env" }}
+            {{- range $index, $element := $.Values.env }}
+            - name: {{ $index | quote }}
+              value: {{ $element | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if hasKey $deployment "env" }}
+            {{- range $index, $element := $deployment.env }}
+            - name: {{ $index | quote }}
+              value: {{ $element | quote }}
+            {{- end }}
+            {{- end }}
+          image: {{ include "chart.image" $ }}
+          imagePullPolicy: IfNotPresent
+          {{- with $deployment.containerPort }}
+          ports:
+            - containerPort: {{ $deployment.containerPort }}
+              protocol: TCP
+          {{- end }}
+          {{- with $deployment.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml $deployment.resources | nindent 12 }}
+          volumeMounts:
+            {{- range $volumeMount := $.Values.volumeMounts  }}
+            - name: secret
+              mountPath: {{ $volumeMount.mountPath }}
+              subPath: {{ $volumeMount.subPath }}
+            {{- end }}
+      volumes:
+        - name: secret
+          secret:
+            secretName: {{ $.Values.appname }}-secret
+{{- end }}

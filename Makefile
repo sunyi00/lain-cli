@@ -1,5 +1,5 @@
 PACKAGE_NAME = einplus_lain_cli
-VERSION = $(shell cat lain_cli/__init__.py | ag -o "(?<=').+(?=')")
+VERSION = $(shell cat future_lain_cli/__init__.py | ag -o "(?<=').+(?=')")
 
 test: clean
 	- cd tests && py.test

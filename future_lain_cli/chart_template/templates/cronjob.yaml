@@ -1,0 +1,66 @@
+{{- range $cronjobName, $cronjob := .Values.cronjobs  }}
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ $.Values.appname }}-{{ $cronjobName }}
+  labels:
+    {{- include "chart.labels" $ | nindent 4 }}
+spec:
+  schedule: {{ $cronjob.schedule | quote }}
+  concurrencyPolicy: {{ $cronjob.concurrencyPolicy }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ $.Values.appname }}-{{ $cronjobName }}
+        {{- include "chart.selectorLabels" $ | nindent 8 }}
+    spec:
+      ttlSecondsAfterFinished: 900
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/instance: {{ $.Values.appname }}-{{ $cronjobName }}
+            {{- include "chart.selectorLabels" $ | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          serviceAccountName: default
+          securityContext:
+            {{- toYaml $cronjob.podSecurityContext | nindent 12 }}
+          containers:
+            - name: {{ $cronjobName }}
+              command:
+                {{- toYaml $cronjob.command | nindent 16 }}
+              envFrom:
+                - secretRef:
+                    name: {{ $.Values.appname }}-env
+              env:
+                {{- if hasKey $.Values "env" }}
+                {{- range $index, $element := $.Values.env }}
+                - name: {{ $index | quote }}
+                  value: {{ $element | quote }}
+                {{- end }}
+                {{- end }}
+                {{- if hasKey $cronjob "env" }}
+                {{- range $index, $element := $cronjob.env }}
+                - name: {{ $index | quote }}
+                  value: {{ $element | quote }}
+                {{- end }}
+                {{- end }}
+              image: {{ include "chart.image" $ }}
+              imagePullPolicy: IfNotPresent
+              resources:
+                {{- toYaml $cronjob.resources | nindent 16 }}
+              volumeMounts:
+                {{- range $volumeMount := $.Values.volumeMounts  }}
+                - name: config
+                  mountPath: {{ $volumeMount.mountPath }}
+                  subPath: {{ $volumeMount.subPath }}
+                {{- end }}
+          volumes:
+            - name: config
+              secret:
+                secretName: {{ $.Values.appname }}-secret
+{{- end }}

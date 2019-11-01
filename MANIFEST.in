@@ -1,4 +1,5 @@
 graft lain_cli/tmpl
+graft future_lain_cli/chart_template
 
 global-exclude __pycache__
 global-exclude *.py[co]

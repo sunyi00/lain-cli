@@ -1,0 +1,151 @@
+# 应用名称, 当然是越短越好, 并且一旦部署以后就不要再改, 每一个 Kubernetes 资源的名称都通过这个  appname 计算而来
+appname: {{ appname }}
+# registry 和 imageTag 会在 lain deploy 阶段通过 helm upgrade 的 --set 参数进行超载
+# 但是你若是想要在这里手写 imageTag, 然后直接用 helm 来管理上线, 也没有问题 (注意修改 kubeconfig 就是了)
+registry: registry.poc.ein.plus
+imageTag: overridden-during-deploy
+# 通用的环境变量写在这里
+# env:
+#   AUTH_TYPE: "basic"
+#   BASIC_AUTH_USER: "admin"
+# 集群特定的环境变量则用 lain env 命令来管理
+# 事实上 lain env 做的事情就是创建出 {{ appname }}-env 这个 Kubernetes Secret,
+# 由于 Kubernetes secret 不方便人手编辑, lain 为此做了明文编辑的封装
+# lain use [CLUSTER]
+# lain env add FOO=BAR
+# lain env edit
+
+# 这一块配置负责把配置文件挂载到容器里, subPath 是需要挂载的文件名称, 而 mountPath 就是你希望挂载到容器里的路径啦
+# 至于要怎样让 Kubernetes 知道你需要挂载的文件, 这个建议用 lain secret 命令:
+# lain use [CLUSTER]
+# lain secret add secret.json
+# 创建好了以后, 像这样声明一下, 就能让 Kubernetes 把你的 secret 里的文件内容映射到容器里:
+# volumeMounts:
+#   - mountPath: /lain/app/conf/secret.json
+#     subPath: secret.json
+{%- if secret_files %}
+volumeMounts:
+  {%- for fname, path in secret_files.items() %}
+  - mountPath: {{ path }}
+    subPath: {{ fname }}
+  {%- endfor %}
+{%- endif %}
+
+# deployment 是一个 Kubernetes 概念, 是 Kubernetes 管理容器最为朴素的一种方式
+# 只需要声明你的应用需要什么资源, 以什么命令启动, 需要暴露什么端口, 开发过 web 应用的人对下边的参数都会非常熟悉
+# 并列的概念还有 statefulset, daemonset, 分别对应着两种不同的部署要求, 这个有兴趣可以细看下文档哦
+deployments:
+  {%- for proc_name, proc in procs.items() %}
+  {{ proc_name }}:
+    {%- if proc.env %}
+    env:
+      {%- for key, value in proc.env.items() %}
+      {{ key }}: {{ value | quote }}
+      {%- endfor %}
+    {%- endif %}
+    replicaCount: 1
+    {%- if loop.first %}
+    # 如果你需要用别的用户来运行你的软件, 则在 podSecurityContext 下声明 runAsUser
+    # 比如用 root:
+    # podSecurityContext: {'runAsUser': 0}
+    {%- endif %}
+    podSecurityContext: {}
+    {%- if loop.first %}
+    # 关于资源分配:
+    # 简而言之, limits 描述了你的应用最多能用到多少资源
+    # 而 requests 则是 Kubernetes 调度的时候就会尊重的数值, 能够保证你的应用最少能用到这么多资源
+    # 如果你确定你的应用大部分时间"很乖", 只有极少数时刻需要临时分配更多资源, 你可以按照经验值或者监控数据来书写资源分配
+    # 如果你不熟悉你的应用的资源使用表现, 你应该先把 requests 和 limits 写成一样, 之后如果有需要优化资源占用的话, 再依靠监控数据进行调整
+    # ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#how-pods-with-resource-requests-are-scheduled
+    {%- endif %}
+    resources:
+      limits:
+        # ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-cpu
+        cpu: 1000m  # 1000m is equivalent to 1 CPU
+        # ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory
+        memory: {{ proc.memory | default('1Gi') }}
+      requests:
+        cpu: 10m
+        memory: {{ proc.memory | default('1Gi') }}
+    {%- if loop.first %}
+    # 仅支持 exec 写法, 一定要封闭在 [] 里边, 不要写成字符串了
+    {%- endif %}
+    command: {{ proc.command | tojson }}
+    {%- if proc.port %}
+    {%- if loop.first %}
+    # 描述你的容器会暴露哪个端口, 对于声明了端口的 deployment, helm template 会帮你渲染出 service
+    # service 在 Kubernetes 里相当于一系列 [容器 IP]:[port] 的集合, 每一个端点都可以提供服务
+    # 类似于一个 nginx upstream 里可以写好多个 server, 自己想象吧
+    # 另外, 这里为了书写方便, 和照顾大多数应用的习惯, 默认应用最多只需要暴露一个 TCP 端口
+    # 如果你的奇葩应用需要高级定制, 比如需要更多端口, 甚至走 UDP, 请寻求 SA 帮助
+    {%- endif %}
+    containerPort: {{ proc.port }}
+    {%- endif %}
+  {%- endfor %}
+
+# cronjob 则是 Kubernetes 管理 job 的机制, 如果你的应用需要做定时任务, 则照着这里的示范声明出来
+# 上线成功了以后, 你肯定很想试跑一次进行测试, 这个简单:
+# ssh [master-node]
+# kubectl create job --from=cronjob/{{ appname }}-{{ cron_name }} test-{{ appname }}-{{ cron_name }}
+# 如果你不确定创建出来的 cronjob 名称叫啥, 你也可以 kubectl get cronjob 罗列出所有的 cronjob
+cronjobs:
+  {%- for cron_name, cron in crons.items() %}
+  {{ cron_name }}:
+    schedule: "{{ cron.schedule }}"
+    {%- if loop.first %}
+    # 默认的定时任务调度策略是 Replace, 这意味着如果上一个任务还没执行完, 下一次 job 就开始了的话,
+    # 则用新的 job 来替代当前运行的 job.
+    # 声明 cronjob 的时候, 一定要注意合理配置资源分配和调度策略, 避免拖垮集群资源
+    # ref: https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#concurrency-policy
+    {%- endif %}
+    concurrencyPolicy: Replace
+    podSecurityContext: {}
+    resources:
+      limits:
+        cpu: 1000m
+        memory: {{ cron.memory | default('1Gi') }}
+      requests:
+        cpu: 10m
+        memory: {{ cron.memory | default('1Gi') }}
+    command: {{ cron.command | tojson }}
+    {%- if cron.env %}
+    env:
+      {%- for key, value in cron.env.items() %}
+      {{ key }}: {{ value | quote }}
+      {%- endfor %}
+    {%- endif %}
+  {%- endfor %}
+
+# ingress 是 Kubernetes 抽象出来的负责描述域名转发规则的资源
+# 一个 ingress rule 描述了一个域名要转发到哪个 Kubernetes service 下边
+# 但是在 values.yaml 中, 已经贴心的帮你把生成 service 的细节写到 templates/service.yaml 这个模板里了
+# 如果你想更进一步了解 service 是什么, 可以参看模板里的注释, 以及相应的 Kubernetes 文档:
+# https://kubernetes.io/docs/concepts/services-networking/service/#motivation
+ingresses:
+  # 这里只需要写域名最开始的那部分就可以了, 在模板里会帮你展开成对应集群的内网域名
+  # 如果你的应用需要公网域名, 则寻求 SA 帮助
+  - host: {{ appname }}
+    # 你想把这个域名的流量打到哪个 deploy 上, 就在这里写哪个 deploy 的名称
+    deployName: web
+    paths:
+      - /
+# 如果你的应用不需要外网访问, 则 ingresses 这一块留空即可, 删了也没问题啦
+# 别的应用如果需要在集群内访问 {{ appname }}, 可以直接通过 {{ appname }}-{{ deployName }} 来访问
+# 只要你在 deployment 里声明了 containerPort, chart 模板就会帮你创建出免费的 service, 作为集群的内部访问域名
+
+# build clause 负责描述 legacy_lain 的构建
+# lain4 假定所有集群都用同一个镜像, 如果你的应用暂时做不到, 请删除 build, release 这两个构建相关的字段,
+# 继续用 legacy_lain 进行构建, 然后在 deploy 阶段手动指定镜像 (不指定的话, cli 其实也会帮你打印出最近构建的镜像):
+# lain deploy --image-tag=[IMAGE]
+build:
+  {{ build | to_yaml | indent(2) }}
+
+{%- if release %}
+release:
+  {{ release | to_yaml | indent(2) }}
+{%- endif %}
+
+{%- if test %}
+test:
+  {{ test | default('') | to_yaml | indent(2) }}
+{%- endif %}
