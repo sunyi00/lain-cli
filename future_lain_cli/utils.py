@@ -26,15 +26,16 @@ CLI_DIR = dirname(abspath(__file__))
 TEMPLATE_DIR = join(CLI_DIR, 'chart_template')
 template_env = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_DIR))
 CHART_DIR_NAME = 'chart'
-OUR_BIN_DIRECTORY = '/usr/local/bin'
-HELM_BIN = f'{OUR_BIN_DIRECTORY}/helm'
-KUBECTL_BIN = f'{OUR_BIN_DIRECTORY}/kubectl'
-CDN = 'https://static.einplus.cn'
 ENV = os.environ
-ENV['PATH'] = f'{OUR_BIN_DIRECTORY}:{ENV["PATH"]}'
+LAIN_EXBIN_PREFIX = ENV.get('LAIN_EXBIN_PREFIX') or '/usr/local/bin'
+HELM_BIN = join(LAIN_EXBIN_PREFIX, 'helm')
+KUBECTL_BIN = join(LAIN_EXBIN_PREFIX, 'kubectl')
+CDN = 'https://static.einplus.cn'
+ENV['PATH'] = f'{LAIN_EXBIN_PREFIX}:{ENV["PATH"]}'
 FUTURE_CLUSTERS = MappingProxyType({
     'future': MappingProxyType({
         'legacy_lain_phase': 'ein',  # this tells lain4 where to push your image
+        'legacy_lain_domain': 'lain.ein.plus',
         'registry': 'registry.lain.ein.plus',
         'grafana_url': 'http://grafana.future.ein.plus/d/7sl4vJAZk/docker-monitoring',
         'kibana': 'kibana.future.ein.plus',
@@ -312,11 +313,13 @@ def helm(*args, **kwargs):
         version_res = subprocess.run(['helm', 'version', '--short'], capture_output=True, check=True)
         version = version_res.stdout.decode('utf-8')
     except FileNotFoundError:
-        download_binary(dest=HELM_BIN)
-        return helm(*args)
+        download_binary('helm', dest=HELM_BIN)
+        return helm(*args, **kwargs)
+    except PermissionError:
+        error(f'Bad binary: {HELM_BIN}, remove it befure use', exit=1)
     if not version.startswith('v3'):
-        download_binary(dest=HELM_BIN)
-        return helm(*args)
+        download_binary('helm', dest=HELM_BIN)
+        return helm(*args, **kwargs)
     cmd = ['helm', '-n', 'default', *args]
     excall(cmd)
     completed = subprocess.run(cmd, env=ENV, **kwargs)
@@ -329,10 +332,12 @@ def kubectl(*args, exit=None, **kwargs):
         version = version_res.stdout.decode('utf-8').strip().split()[-1]
     except FileNotFoundError:
         download_binary('kubectl', dest=KUBECTL_BIN)
-        return kubectl(*args)
+        return kubectl(*args, exit=exit, **kwargs)
+    except PermissionError:
+        error(f'Bad binary: {KUBECTL_BIN}, remove it befure use', exit=1)
     if version < 'v1.15':
         download_binary('kubectl', dest=KUBECTL_BIN)
-        return kubectl(*args)
+        return kubectl(*args, exit=exit, **kwargs)
     env = os.environ
     env['PATH'] = f'{KUBECTL_BIN}:{env["PATH"]}'
     cmd = ['kubectl', *args]
@@ -374,10 +379,14 @@ def download_binary(thing, dest):
     assert thing in {'kubectl', 'helm'}
     platform = tell_platform()
     url = f'{CDN}/lain4/{thing}-{platform}'
-    click.echo(f'Don\'t mind me, just gonna download {url} into {dest}')
-    with requests.get(url, stream=True) as res:
-        with open(dest, 'wb') as f:
-            shutil.copyfileobj(res.raw, f)
+    click.echo(f'Don\'t mind me, just gonna download {url} into {dest}. If you wanna put them in other places, export LAIN_EXBIN_PREFIX and try this again')
+    try:
+        with requests.get(url, stream=True) as res:
+            with open(dest, 'wb') as f:
+                shutil.copyfileobj(res.raw, f)
+    except KeyboardInterrupt:
+        error(f'Download did not complete, {HELM_BIN} will be cleaned up', exit=1)
+        ensure_absent(f)
 
     # do a `chmod +x` on this thing
     st = os.stat(dest)

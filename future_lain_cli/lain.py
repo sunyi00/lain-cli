@@ -22,6 +22,7 @@ from future_lain_cli.utils import (CHART_DIR_NAME, CWD, FUTURE_CLUSTERS,
 @click.group()
 @click.pass_context
 def lain(ctx):
+    tell_cluster()
     try:
         populate_helm_context(ctx.obj)
     except FileNotFoundError:
@@ -95,6 +96,9 @@ def use(ctx, cluster):
     ensure_absent(dest)
     os.symlink(src, dest)
     kubectl('config', 'set-context', '--current', '--namespace=default')
+    cluster_info = tell_cluster_info()
+    domain = cluster_info['legacy_lain_domain']
+    legacy_lain('config', 'save', cluster, 'domain', domain)
     goodjob(f'You did good, next time you use lain4 / helm / kubectl, it\'ll point to cluster {cluster}')
 
 
@@ -117,7 +121,6 @@ def deploy(ctx, whatever, image_tag, force):
     # otherwise this deploy may fail because envFrom is referencing a
     # non-existent secret
     tell_secret(ctx.obj['env_name'])
-    cluster = tell_cluster()
     ensure_initiated(chart=True, secret=True)
     appname = ctx.obj['appname']
     status = get_app_status(appname)
@@ -132,6 +135,7 @@ def deploy(ctx, whatever, image_tag, force):
         error(err)
         ctx.exit(1)
 
+    cluster = ctx.obj['cluster']
     registry = FUTURE_CLUSTERS[cluster]['registry']
     headsup = f'''
     While being deployed, you can use kubectl to check the status of you app:
@@ -186,10 +190,9 @@ def push(ctx, whatever):
         lain push [CLUSTER]
     """
     if not whatever:
-        cluster_info = tell_cluster_info()
-        legacy_lain_phase = cluster_info['legacy_lain_phase']
-        whatever = [legacy_lain_phase]
-        legacy_lain('tag', legacy_lain_phase, check=True)
+        cluster = ctx.obj['cluster']
+        legacy_lain('tag', cluster, check=True)
+        legacy_lain('push', cluster, exit=True)
 
     legacy_lain('push', *whatever)
 

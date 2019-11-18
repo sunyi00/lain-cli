@@ -20,7 +20,7 @@ requirements = [
     'requests',
     'tabulate>=0.7.5',
     'jenkinsapi==0.3.3',
-    'einplus_lain_sdk>=3.2.4',
+    'einplus_lain_sdk>=3.2.6',
     'einplus_entryclient>=2.4.1',
     # future lain
     'click>=7.0',
