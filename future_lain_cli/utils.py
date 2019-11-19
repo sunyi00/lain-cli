@@ -8,7 +8,6 @@ import stat
 import subprocess
 import sys
 from inspect import cleandoc
-from io import StringIO
 from os import getcwd, readlink, remove
 from os.path import abspath, basename, dirname, expanduser, isdir, isfile, join
 from tempfile import NamedTemporaryFile, TemporaryDirectory
@@ -42,6 +41,7 @@ FUTURE_CLUSTERS = MappingProxyType({
     }),
     'bei': MappingProxyType({
         'legacy_lain_phase': 'test',
+        'legacy_lain_domain': 'poc.ein.plus',
         'registry': 'registry.dev.ein.plus',
     }),
 })
@@ -107,7 +107,7 @@ To access your app through internal domain:
 {%- if 'cronjobs' in values and values.cronjobs %}
 To test your cronjob:
     {%- for job_name in values.cronjobs.keys() %}
-    kubectl create job --from=cronjob/{{ appname }}-{{ job_name }} {{ appname }}-{{ job_name }}-test'
+    kubectl create job --from=cronjob/{{ appname }}-{{ job_name }} {{ appname }}-{{ job_name }}-test
     {%- endfor %}
 
 Here's some very good stuff that you'll like:
@@ -218,6 +218,28 @@ def apply_secret(dic):
     kubectl('apply', '-f', f.name, exit=True)
 
 
+def tell_helm_set_clause(pairs):
+    """Sure you can override helm values, but I might not approve it"""
+    ctx = context()
+    cluster = ctx.obj['cluster']
+    registry = FUTURE_CLUSTERS[cluster]['registry']
+    # registry and cluster must be provided in a helm deploy command
+    sl = [f'registry={registry}', f'cluster={cluster}']
+    image_tag = None
+    for pair in pairs:
+        k, v = pair.popitem()
+        if k == 'imageTag':
+            v = image_tag = tell_image(v)
+
+        sl.append(f'{k}={v}')
+
+    if not image_tag:
+        image_tag = tell_image()
+        sl.append(f'imageTag={image_tag}')
+
+    return ','.join(sl)
+
+
 def tell_image(image_tag=None):
     """really smart method to figure out which image_tag is the right one to deploy:
         1. if image_tag isn't provided, obtain from legacy_lain
@@ -243,7 +265,7 @@ def tell_image(image_tag=None):
 
         If you really need to deploy this version, do a lain build + push first.
         If you'd like to deploy the latest existing image:
-            lain deploy --image-tag={latest_tag}
+            lain deploy --set imageTag={latest_tag}
         If you'd like to choose an existing image, here's some recent image tags for you to copy:
             {recent_tags}
         You can check out the rest at {registry.base_url}/v2/{appname}/tags/list.
@@ -464,7 +486,6 @@ def get_app_status(appname):
 
 
 def populate_helm_context_from_lain_yaml(obj, lain_yaml):
-    click.echo(f'Translating {lain_yaml.name} to helm charts...')
     lain_yaml = yalo(lain_yaml)
     appname = lain_yaml.pop('appname')
     obj['appname'] = appname
@@ -511,50 +532,42 @@ def populate_helm_context_from_lain_yaml(obj, lain_yaml):
                 obj['secret_files'][fname] = f
 
 
-example_lain_yaml = StringIO("""# ref: https://github.com/ein-plus/economist/blob/master/lain.poc.yaml
+example_lain_yaml = """# ref: https://github.com/ein-plus/dummy
+appname: dummy
+
 build:
   base: registry.lain.ein.plus/einplus/centos-base:20190925-slim
   prepare:
     version: 1
     script:
-      - pip3.6 install -i https://pypi.in.ein.plus/root/ein/+simple/ -U pip
+      - pip3.6 install -U pip -i https://pypi.doubanio.com/simple/
     keep:
       - src
   script:
-    - pip3.6 install -i https://pypi.in.ein.plus/root/ein/+simple/ --exists-action=w -r requirements.txt
+    - pip3.6 install --exists-action=w -r requirements.txt
 
 web:
-  cmd: ['deploy/run.sh']
-  port: 8000
-  memory: 512M
-  setup_time: 30
+  cmd: ['/lain/app/run.py']
+  port: 5000
+  memory: 80M
   env:
-    - DJANGO_SETTINGS_MODULE=deploy.settings.poc
+    - FOO=BAR
   secret_files:
-    - /lain/app/deploy/secrets.json
+    - /lain/app/deploy/topsecret.txt
 
-worker.celery:
-  cmd: ['celery', 'worker', '-A', 'xxx.xxx', '--concurrency', '1']
-  memory: 256m
-  env:
-    - DJANGO_SETTINGS_MODULE=deploy.settings.poc
-    - C_FORCE_ROOT=true
-  secret_files:
-    - /lain/app/deploy/secrets.json
-
-cron.chatlog-export:
-  cmd: ['./manage.py', 'chatlog_export', '--all', '--upload']
-  memory: 256m
+cron.useless:
+  cmd: ['ls']
+  memory: 20m
   schedule: "30 0 * * *"
   env:
-    - DJANGO_SETTINGS_MODULE=deploy.settings.poc
+    - FOO=BAR
   secret_files:
-    - /lain/app/deploy/secrets.json
+    - /lain/app/deploy/topsecret.txt
 
 test:
   script:
     - make test
-""")
+"""
 
 
 template_env.filters['basename'] = basename
@@ -573,8 +586,8 @@ def literal_presenter(dumper, data):
 yaml.add_representer(literal, literal_presenter)
 
 
-class EnvPairType(click.ParamType):
-    name = "envpair"
+class KVPairType(click.ParamType):
+    name = "kvpair"
 
     def convert(self, value, param, ctx):
         try:

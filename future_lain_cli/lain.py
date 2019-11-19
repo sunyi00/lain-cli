@@ -2,21 +2,23 @@
 # -*- coding: utf-8 -*-
 import os
 import shutil
+from io import StringIO
 from os.path import basename, dirname, expanduser, isfile, join
 
 import click
 import yaml
 
 from future_lain_cli.utils import (CHART_DIR_NAME, CWD, FUTURE_CLUSTERS,
-                                   HELM_WEIRD_STATE, TEMPLATE_DIR, EnvPairType,
+                                   HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
                                    apply_secret, deploy_toast, dump_secret,
                                    echo, edit_file, ensure_absent,
                                    ensure_initiated, error, example_lain_yaml,
                                    find, get_app_status, goodjob, helm,
                                    kubectl, legacy_lain, populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
-                                   tell_cluster, tell_cluster_info, tell_image,
-                                   tell_secret, template_env, yalo)
+                                   tell_cluster, tell_cluster_info,
+                                   tell_helm_set_clause, tell_secret,
+                                   template_env, yalo)
 
 
 @click.group()
@@ -31,7 +33,7 @@ def lain(ctx):
 
 @lain.command()
 @click.option('--appname', default=basename(CWD), help='Name of the app, default to the lain.yaml appname. But if --lain-yaml isn\'t provided, the dirname of cwd will be used')
-@click.option('--lain-yaml', type=click.File(), default=example_lain_yaml, help='Generate helm charts from the given lain.yaml, if not provided, an example chart will be generated')
+@click.option('--lain-yaml', type=click.File(), default=lambda: StringIO(example_lain_yaml), help='Generate helm charts from the given lain.yaml, if not provided, an example chart will be generated')
 @click.option('--force', '-f', is_flag=True, help=f'Remove ./{CHART_DIR_NAME} and then regenerate')
 @click.pass_context
 def init(ctx, appname, lain_yaml, force):
@@ -104,10 +106,10 @@ def use(ctx, cluster):
 
 @lain.command()
 @click.argument('whatever', nargs=-1)
-@click.option('--image-tag', help='Override image_tag')
+@click.option('--set', 'pairs', multiple=True, type=KVPairType(), help='Override values in values.yaml, same as helm')
 @click.option('--force', is_flag=True, help='Force resource updates through a replacement strategy')
 @click.pass_context
-def deploy(ctx, whatever, image_tag, force):
+def deploy(ctx, whatever, pairs, force):
     """\b
     deploy your app.
     for lain4 clusters:
@@ -140,8 +142,6 @@ def deploy(ctx, whatever, image_tag, force):
         error(err)
         ctx.exit(1)
 
-    cluster = ctx.obj['cluster']
-    registry = FUTURE_CLUSTERS[cluster]['registry']
     headsup = f'''
     While being deployed, you can use kubectl to check the status of you app:
         kubectl get po -l app.kubernetes.io/name={appname}
@@ -150,8 +150,8 @@ def deploy(ctx, whatever, image_tag, force):
         kubectl delete po -l app.kubernetes.io/name={appname}
     '''
     echo(headsup)
-    image_tag = tell_image(image_tag)
-    options = ['--install', '--wait', '--set', f'registry={registry},cluster={cluster},imageTag={image_tag}']
+    set_clause = tell_helm_set_clause(pairs)
+    options = ['--install', '--wait', '--set', set_clause]
     if force:
         options.append('--force')
 
@@ -219,7 +219,7 @@ def env(ctx):
 
 
 @env.command()
-@click.argument('pairs', type=EnvPairType(), nargs=-1)
+@click.argument('pairs', type=KVPairType(), nargs=-1)
 @click.pass_context
 def add(ctx, pairs):
     """\b

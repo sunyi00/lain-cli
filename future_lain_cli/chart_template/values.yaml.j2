@@ -136,7 +136,7 @@ ingresses:
 # build clause 负责描述 legacy_lain 的构建
 # lain4 假定所有集群都用同一个镜像, 如果你的应用暂时做不到, 请删除 build, release 这两个构建相关的字段,
 # 继续用 legacy_lain 进行构建, 然后在 deploy 阶段手动指定镜像 (不指定的话, cli 其实也会帮你打印出最近构建的镜像):
-# lain deploy --image-tag=[IMAGE]
+# lain deploy --set imageTag=[IMAGE_TAG]
 build:
   {{ build | to_yaml | indent(2) }}
 
