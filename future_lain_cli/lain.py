@@ -108,13 +108,18 @@ def use(ctx, cluster):
 @click.option('--force', is_flag=True, help='Force resource updates through a replacement strategy')
 @click.pass_context
 def deploy(ctx, whatever, image_tag, force):
-    """deploy your app.
+    """\b
+    deploy your app.
     for lain4 clusters:
         lain use [CLUSTER]
         lain deploy
     for legacy clusters, your command will be passed to the legacy version of lain-cli
     """
     if whatever:
+        cluster = whatever[0]
+        if cluster in FUTURE_CLUSTERS:
+            error('For lain4 clusters, just type `lain deploy`', exit=1)
+
         legacy_lain('deploy', *whatever, exit=True)
 
     # no big deal, just using this line to initialized env first
@@ -160,7 +165,8 @@ def deploy(ctx, whatever, image_tag, force):
 @lain.command()
 @click.pass_context
 def build(ctx):
-    """legacy_lain functionality, if build clause exists in chart/values.yaml,
+    """\b
+    legacy_lain functionality, if build clause exists in chart/values.yaml,
     then uses values.yaml as lain.yaml. otherwise this command behaves just
     like legacy_lain"""
     if 'build' in ctx.obj['values']:
@@ -182,7 +188,8 @@ def tag(ctx, whatever):
 @click.argument('whatever', nargs=-1)
 @click.pass_context
 def push(ctx, whatever):
-    """push app image using legacy_lain.
+    """\b
+    push app image using legacy_lain.
     For lain4 clusters, push target will automatically be detected:
         lain use [CLUSTER]
         lain push
@@ -191,7 +198,10 @@ def push(ctx, whatever):
     """
     if not whatever:
         cluster = ctx.obj['cluster']
-        legacy_lain('tag', cluster, check=True)
+        res = legacy_lain('tag', cluster)
+        if res.returncode:
+            error(f'legacy_lain tag failed, maybe you need to lain use {cluster} one more time', exit=1)
+
         legacy_lain('push', cluster, exit=True)
 
     legacy_lain('push', *whatever)
@@ -200,7 +210,8 @@ def push(ctx, whatever):
 @lain.group()
 @click.pass_context
 def env(ctx):
-    """env management.
+    """\b
+    env management.
     on lain4 clusters, env are managed by Kubernetes Secret, and referenced
     using envFrom in Kubernetes manifests.
     this cli merely exposes some handy editing functionalities.
@@ -211,7 +222,8 @@ def env(ctx):
 @click.argument('pairs', type=EnvPairType(), nargs=-1)
 @click.pass_context
 def add(ctx, pairs):
-    """env management.
+    """\b
+    env management.
         lain secret add FOO=BAR EGG=SPAM
     """
     if not pairs:
@@ -245,7 +257,8 @@ def edit(ctx):
 
 @lain.group()
 def secret():
-    """secret file management.
+    """\b
+    secret file management.
     on lain4 clusters, secrets are managed by Kubernetes Secret, this cli
     merely exposes some handy editing functionalities.
     on lain2/3 clusters, secrets are managed by lvault, in order to bring
@@ -259,7 +272,8 @@ def secret():
 @click.option('-f', help='The secret file to add, this is a legacy_lain option')
 @click.pass_context
 def add(ctx, whatever, f):
-    """secretfile management.
+    """\b
+    secretfile management.
     for lain4:
         lain secret add [FILE]
     for legacy_lain:
@@ -286,7 +300,8 @@ def add(ctx, whatever, f):
 @click.argument('whatever', nargs=-1)
 @click.pass_context
 def show(ctx, whatever):
-    """secretfile management.
+    """\b
+    secretfile management.
     for lain4:
         lain secret show
     for legacy_lain:
