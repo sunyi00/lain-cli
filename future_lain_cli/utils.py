@@ -97,7 +97,11 @@ deploy_toast_str = '''Your pods have all been created, you can see them using:
 Remember, if this upgrade only contains config changes, Kubernetes will not restart your containers, you'll have to do this yourself:
     kubectl delete po -l app.kubernetes.io/name={{ appname }}
 
-{% if 'ingresses' in values and values.ingresses %}
+To rollback to a previous version:
+    helm history {{ appname }}
+    helm rollback {{ appname }} [REVISION]
+
+{%- if 'ingresses' in values and values.ingresses %}
 To access your app through internal domain:
     http://{{ appname }}.{{ cluster }}.ein.plus
 {% endif %}
