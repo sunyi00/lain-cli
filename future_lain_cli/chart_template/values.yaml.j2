@@ -43,6 +43,12 @@ deployments:
       {{ key }}: {{ value | quote }}
       {%- endfor %}
     {%- endif %}
+    {%- if loop.first %}
+    # 应用在不同的集群可能需要设置不同的实例数, 这个可以在 values-[CLUSTER].yaml 里(类似)这样写, helm 会帮你自动合并变量:
+    # deployments:
+    #   {{ proc_name }}:
+    #     replicaCount: 3
+    {%- endif %}
     replicaCount: 1
     {%- if loop.first %}
     # 如果你需要用别的用户来运行你的软件, 则在 podSecurityContext 下声明 runAsUser

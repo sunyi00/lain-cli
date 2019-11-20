@@ -44,14 +44,21 @@ def test_workflow(dummy):
         'paths': ['/'],
     })
     yadu(values, values_path)
+    # adjust replicaCount in override values file
+    replicaCount = 3
+    override_values = {'deployments': {'web-dev': {'replicaCount': replicaCount}}}
+    yadu(override_values, f'{CHART_DIR_NAME}/values-{TEST_CLUSTER}.yaml')
     # deploy again to create newly added ingress rule
     run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])
-    # and check if the new ingress rule is created
+    # check if the new ingress rule is created
     res = kubectl('get', 'ing', f'{DUMMY_APPNAME}-dev-{TEST_CLUSTER}-ein-plus')
     assert not res.returncode
     dummy_dev_env = url_get_json(DUMMY_DEV_URL)
     # env is overriden in dummy-dev, see example_lain_yaml
     assert dummy_dev_env['env']['FOO'] == 'SPAM'
+    # check if replicaCount is correctly overriden
+    res = kubectl('get', 'deploy', f'{DUMMY_APPNAME}-web-dev', '-o=jsonpath={.spec.replicas}', capture_output=True)
+    assert res.stdout.decode('utf-8').strip() == str(replicaCount)
 
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(3))
