@@ -30,6 +30,7 @@ rules:
   - "apps"
   - "batch"
   - "networking.k8s.io"
+  - "extensions"
   resources:
   - jobs
   - secrets

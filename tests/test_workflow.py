@@ -1,11 +1,9 @@
-from click.testing import CliRunner
-from time import sleep
 import requests
-from tenacity import retry, wait_fixed, stop_after_attempt
+from click.testing import CliRunner
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from future_lain_cli.lain import lain
-from future_lain_cli.utils import kubectl
-from tests.conftest import DUMMY_IMAGE_TAG, TEST_CLUSTER, DUMMY_URL
+from tests.conftest import DUMMY_IMAGE_TAG, DUMMY_URL, TEST_CLUSTER
 
 
 def test_workflow(dummy):

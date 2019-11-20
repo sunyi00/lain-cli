@@ -218,26 +218,33 @@ def apply_secret(dic):
     kubectl('apply', '-f', f.name, exit=True)
 
 
+def tell_cluster_values_file():
+    cluster = tell_cluster()
+    values_file = join(CHART_DIR_NAME, f'values-{cluster}.yaml')
+    if isfile(values_file):
+        return values_file
+
+
 def tell_helm_set_clause(pairs):
     """Sure you can override helm values, but I might not approve it"""
     ctx = context()
     cluster = ctx.obj['cluster']
     registry = FUTURE_CLUSTERS[cluster]['registry']
     # registry and cluster must be provided in a helm deploy command
-    sl = [f'registry={registry}', f'cluster={cluster}']
+    kvlist = [f'registry={registry}', f'cluster={cluster}']
     image_tag = None
     for pair in pairs:
         k, v = pair.popitem()
         if k == 'imageTag':
             v = image_tag = tell_image(v)
 
-        sl.append(f'{k}={v}')
+        kvlist.append(f'{k}={v}')
 
     if not image_tag:
         image_tag = tell_image()
-        sl.append(f'imageTag={image_tag}')
+        kvlist.append(f'imageTag={image_tag}')
 
-    return ','.join(sl)
+    return ','.join(kvlist)
 
 
 def tell_image(image_tag=None):
@@ -311,7 +318,7 @@ def ensure_initiated(chart=False, secret=False):
     if secret:
         # if volumeMounts are used in values.yaml but secret doesn't exists,
         # print error and then exit
-        subPaths = [m['subPath'] for m in ctx.obj['values']['volumeMounts']]
+        subPaths = [m['subPath'] for m in ctx.obj['values'].get('volumeMounts', {})]
         if subPaths:
             cluster = ctx.obj['cluster']
             res = kubectl('-n', 'default', 'get', 'secret', ctx.obj['secret_name'], capture_output=True)

@@ -1,0 +1,23 @@
+{{- range $ingress := .Values.externalIngresses -}}
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ $ingress.host | replace "." "-" }}
+  annotations:
+    kubernetes.io/ingress.class: lain-external
+  labels:
+    {{- include "chart.labels" $ | nindent 4 }}
+spec:
+  rules:
+    - host: {{ $ingress.host }}
+      http:
+        paths:
+        {{- range $ingress.paths }}
+          - path: {{ . }}
+            backend:
+              serviceName: {{ $.Values.appname }}-{{ $ingress.deployName }}
+              servicePort: 80
+        {{- end }}
+
+{{- end -}}

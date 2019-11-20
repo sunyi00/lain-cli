@@ -17,6 +17,7 @@ from future_lain_cli.utils import (CHART_DIR_NAME, CWD, FUTURE_CLUSTERS,
                                    kubectl, legacy_lain, populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
                                    tell_cluster, tell_cluster_info,
+                                   tell_cluster_values_file,
                                    tell_helm_set_clause, tell_secret,
                                    template_env, yalo)
 
@@ -151,9 +152,14 @@ def deploy(ctx, whatever, pairs, force):
     '''
     echo(headsup)
     set_clause = tell_helm_set_clause(pairs)
-    options = ['--install', '--wait', '--set', set_clause]
+    options = ['--atomic', '--install', '--wait', '--set', set_clause]
     if force:
         options.append('--force')
+
+    # if chart/values-[CLUSTER].yaml exists, use it
+    values_file = tell_cluster_values_file()
+    if values_file:
+        options.extend(['-f', values_file])
 
     res = helm('upgrade', *options, appname, f'./{CHART_DIR_NAME}')
     if res.returncode:

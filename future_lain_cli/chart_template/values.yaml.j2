@@ -121,17 +121,30 @@ cronjobs:
 # 但是在 values.yaml 中, 已经贴心的帮你把生成 service 的细节写到 templates/service.yaml 这个模板里了
 # 如果你想更进一步了解 service 是什么, 可以参看模板里的注释, 以及相应的 Kubernetes 文档:
 # https://kubernetes.io/docs/concepts/services-networking/service/#motivation
+
+# ingresses 用来声明内网域名
 ingresses:
   # 这里只需要写域名最开始的那部分就可以了, 在模板里会帮你展开成对应集群的内网域名
-  # 如果你的应用需要公网域名, 则寻求 SA 帮助
   - host: {{ appname }}
     # 你想把这个域名的流量打到哪个 deploy 上, 就在这里写哪个 deploy 的名称
     deployName: web
     paths:
       - /
+
+# externalIngresses 用来声明公网域名, 但是这个字段建议你写到 {{ chart_name }}/values-[CLUSTER].yaml 里, 毕竟这属于集群特定的配置
+# externalIngresses:
+#   # 这里需要写成完整的域名, 因为每个集群的公网域名都不一样, 模板不好帮你做补全
+#   - host: {{ appname }}
+#     # 你想把这个域名的流量打到哪个 deploy 上, 就在这里写哪个 deploy 的名称
+#     deployName: web
+#     paths:
+#       - /
+
 # 如果你的应用不需要外网访问, 则 ingresses 这一块留空即可, 删了也没问题啦
 # 别的应用如果需要在集群内访问 {{ appname }}, 可以直接通过 {{ appname }}-{{ deployName }} 来访问
 # 只要你在 deployment 里声明了 containerPort, chart 模板就会帮你创建出免费的 service, 作为集群的内部访问域名
+
+# LEGACY LAIN BLOCK
 
 # build clause 负责描述 legacy_lain 的构建
 # lain4 假定所有集群都用同一个镜像, 如果你的应用暂时做不到, 请删除 build, release 这两个构建相关的字段,
@@ -149,3 +162,5 @@ release:
 test:
   {{ test | default('') | to_yaml | indent(2) }}
 {%- endif %}
+
+# LEGACY LAIN BLOCK
