@@ -55,12 +55,6 @@ def quote(s):
     return shlex.quote(s)
 
 
-def to_yaml(a, *args, **kw):
-    '''Make verbose, human readable yaml'''
-    transformed = yaml.dump(a, Dumper=yaml.SafeDumper, allow_unicode=True, **kw)
-    return transformed
-
-
 def context():
     return click.get_current_context()
 
@@ -167,7 +161,7 @@ def dump_secret(secret_name, init='env'):
     """create a tempfile and dump plaintext secret into it"""
     secret_dic = tell_secret(secret_name, init=init)
     f = NamedTemporaryFile(suffix='.yaml')
-    f.write(yaml.dump(secret_dic).encode('utf-8'))
+    yadu(secret_dic, f)
     return f
 
 
@@ -213,7 +207,7 @@ def apply_secret(dic):
         dic['data'][fname] = base64.b64encode(s.encode('utf-8')).decode('utf-8')
 
     f = NamedTemporaryFile(suffix='.yaml')
-    f.write(yaml.dump(dic).encode('utf-8'))
+    yadu(dic, f)
     f.seek(0)
     kubectl('apply', '-f', f.name, exit=True)
 
@@ -467,16 +461,36 @@ def yalo(f):
     return yaml.load(f, Loader=yaml.FullLoader)
 
 
+def yadu(dic, f=None):
+    s = yaml.dump(dic, allow_unicode=True)
+    if not f:
+        return s
+    if hasattr(f, 'read'):
+        f.write(s)
+    elif isinstance(f, str):
+        with open(f, 'wb') as dest:
+            dest.write(s.encode('utf-8'))
+    else:
+        raise ValueError(f'f must be a file or path, got {f}')
+
+
 def populate_helm_context(obj):
     """gather basic information about the current app.
     If cluster info is provided, will try to fetch app status from Kubernetes"""
-    with open(f'./{CHART_DIR_NAME}/values.yaml') as f:
-        helm_values = yalo(f)
-        appname = obj['appname'] = helm_values['appname']
-        obj['values'] = helm_values
+    values_yaml = f'./{CHART_DIR_NAME}/values.yaml'
+    try:
+        with open(values_yaml) as f:
+            helm_values = yalo(f)
+            appname = obj['appname'] = helm_values['appname']
+            obj['values'] = helm_values
 
-    obj['secret_name'] = f'{appname}-secret'
-    obj['env_name'] = f'{appname}-env'
+        obj['secret_name'] = f'{appname}-secret'
+        obj['env_name'] = f'{appname}-env'
+    except FileNotFoundError:
+        error(f'{values_yaml} not found, use `lain init` if you are managing a lain4 app')
+        raise
+    except KeyError:
+        error(f'{values_yaml} doesn\'t look like a valid lain4 yaml, if you want to use lain4 for this app, use `lain inif -f`', exit=1)
 
 
 def get_app_status(appname):
@@ -557,8 +571,15 @@ web:
   cmd: ['/lain/app/run.py']
   port: 5000
   memory: 80M
+  secret_files:
+    - /lain/app/deploy/topsecret.txt
+
+proc.web-dev:
+  cmd: ['/lain/app/run.py']
+  port: 5000
+  memory: 80M
   env:
-    - FOO=BAR
+    - FOO=SPAM
   secret_files:
     - /lain/app/deploy/topsecret.txt
 
@@ -579,7 +600,7 @@ test:
 
 template_env.filters['basename'] = basename
 template_env.filters['quote'] = quote
-template_env.filters['to_yaml'] = to_yaml
+template_env.filters['to_yaml'] = yadu
 
 
 class literal(str):

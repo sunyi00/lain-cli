@@ -97,8 +97,10 @@ cronjobs:
     # 则用新的 job 来替代当前运行的 job.
     # 声明 cronjob 的时候, 一定要注意合理配置资源分配和调度策略, 避免拖垮集群资源
     # ref: https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#concurrency-policy
-    {%- endif %}
     concurrencyPolicy: Replace
+    # 重试次数, 默认不做任何重试, 如果你的应用能保证不因为资源问题失败, 可以加上宽容的重试
+    backoffLimit: 0
+    {%- endif %}
     podSecurityContext: {}
     resources:
       limits:

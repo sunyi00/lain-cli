@@ -1,20 +1,15 @@
+from os.path import join
+
 import requests
-from click.testing import CliRunner
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from future_lain_cli.lain import lain
-from tests.conftest import DUMMY_IMAGE_TAG, DUMMY_URL, TEST_CLUSTER
+from future_lain_cli.utils import kubectl, yadu, yalo
+from tests.conftest import (CHART_DIR_NAME, DUMMY_APPNAME, DUMMY_IMAGE_TAG,
+                            DUMMY_URL, DUMMY_DEV_URL, TEST_CLUSTER, run)
 
 
 def test_workflow(dummy):
-    runner = CliRunner()
-    obj = {}
-
-    def run(*args, returncode=0, **kwargs):
-        res = runner.invoke(*args, obj=obj, **kwargs)
-        assert res.exit_code == returncode
-        return res
-
     # test lain init
     run(lain, args=['init'])
     # lain init should failed when chart directory already exists
@@ -30,13 +25,31 @@ def test_workflow(dummy):
     # use a built image to deploy
     run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])
     # check service is up
-    dummy_env = get_dummy_env()
+    dummy_env = url_get_json(DUMMY_URL)
     assert dummy_env['env']['FOO'] == 'BAR'
     assert dummy_env['secretfile'] == 'I\nAM\nBATMAN'
+    # add one extra ingress rule to values.yaml
+    values_path = join(CHART_DIR_NAME, 'values.yaml')
+    with open(values_path) as f:
+        values = yalo(f)
+
+    values['ingresses'].append({
+        'host': f'{DUMMY_APPNAME}-dev',
+        'deployName': 'web-dev',
+        'paths': ['/'],
+    })
+    yadu(values, values_path)
+    # deploy again, and check if the new ingress rule is created
+    run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])
+    res = kubectl('get', 'ing', f'{DUMMY_APPNAME}-dev-{TEST_CLUSTER}-ein-plus')
+    assert not res.returncode
+    dummy_dev_env = url_get_json(DUMMY_DEV_URL)
+    # env is overriden in dummy-dev, see example_lain_yaml
+    assert dummy_dev_env['env']['FOO'] == 'SPAM'
 
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(3))
-def get_dummy_env():
-    res = requests.get(DUMMY_URL)
+def url_get_json(url):
+    res = requests.get(url)
     res.raise_for_status()
     return res.json()

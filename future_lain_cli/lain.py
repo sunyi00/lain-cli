@@ -6,7 +6,6 @@ from io import StringIO
 from os.path import basename, dirname, expanduser, isfile, join
 
 import click
-import yaml
 
 from future_lain_cli.utils import (CHART_DIR_NAME, CWD, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
@@ -19,7 +18,7 @@ from future_lain_cli.utils import (CHART_DIR_NAME, CWD, FUTURE_CLUSTERS,
                                    tell_cluster, tell_cluster_info,
                                    tell_cluster_values_file,
                                    tell_helm_set_clause, tell_secret,
-                                   template_env, yalo)
+                                   template_env, yadu, yalo)
 
 
 @click.group()
@@ -248,7 +247,7 @@ def add(ctx, pairs):
 def show(ctx):
     """env management."""
     secret_dic = tell_secret(ctx.obj['env_name'], init='env')
-    echo(yaml.dump(secret_dic))
+    echo(yadu(secret_dic))
 
 
 @env.command()
@@ -320,7 +319,7 @@ def show(ctx, whatever):
         legacy_lain('secret', 'show', *whatever, exit=True)
 
     secret_dic = tell_secret(ctx.obj['secret_name'], init='secret')
-    echo(yaml.dump(secret_dic))
+    echo(yadu(secret_dic))
     ctx.exit(0)
 
 

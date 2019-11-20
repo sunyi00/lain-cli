@@ -1,5 +1,5 @@
 {{- range $deployName, $deployment := .Values.deployments  }}
-{{- if $deployment.containerPort -}}
+{{- if $deployment.containerPort }}
 ---
 apiVersion: v1
 kind: Service
@@ -22,5 +22,5 @@ spec:
   selector:
     app.kubernetes.io/instance: {{ $.Values.appname }}-{{ $deployName }}
     {{- include "chart.selectorLabels" $ | nindent 4 }}
-{{- end -}}
-{{- end -}}
+{{- end }}
+{{- end }}
