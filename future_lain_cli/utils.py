@@ -94,6 +94,9 @@ def error(s, exit=None):
 deploy_toast_str = '''Your pods have all been created, you can see them using:
     kubectl get po -l app.kubernetes.io/name={{ appname }}
 
+Remember, if this upgrade only contains config changes, Kubernetes will not restart your containers, you'll have to do this yourself:
+    kubectl delete po -l app.kubernetes.io/name={{ appname }}
+
 {% if 'ingresses' in values and values.ingresses %}
 To access your app through internal domain:
     http://{{ appname }}.{{ cluster }}.ein.plus
@@ -224,20 +227,18 @@ def tell_helm_set_clause(pairs):
     ctx = context()
     cluster = ctx.obj['cluster']
     registry = FUTURE_CLUSTERS[cluster]['registry']
-    # registry and cluster must be provided in a helm deploy command
-    kvlist = [f'registry={registry}', f'cluster={cluster}']
+    # 所有超载变量都塞进去, 除了 imageTag, 这玩意我得检查一下
+    kvlist = [
+        f'registry={registry}', f'cluster={cluster}',
+        *[f'{k}={v}' for k, v in pairs if k != 'imageTag']
+    ]
+    pair = next(((k, image_tag) for k, image_tag in pairs if k == 'imageTag'), None)
     image_tag = None
-    for pair in pairs:
-        k, v = pair.popitem()
-        if k == 'imageTag':
-            v = image_tag = tell_image(v)
+    if pair:
+        _, image_tag = pair
 
-        kvlist.append(f'{k}={v}')
-
-    if not image_tag:
-        image_tag = tell_image()
-        kvlist.append(f'imageTag={image_tag}')
-
+    image_tag = tell_image(image_tag)
+    kvlist.append(f'imageTag={image_tag}')
     return ','.join(kvlist)
 
 
@@ -620,6 +621,6 @@ class KVPairType(click.ParamType):
     def convert(self, value, param, ctx):
         try:
             k, v = value.split('=')
-            return {k: v}
+            return (k, v)
         except (AttributeError, ValueError):
             self.fail("expected something like FOO=BAR, got " f"{value!r} of type {type(value).__name__}", param, ctx,)

@@ -6,7 +6,8 @@ import pytest
 from click.testing import CliRunner
 
 from future_lain_cli.lain import lain
-from future_lain_cli.utils import CHART_DIR_NAME, ensure_absent, helm
+from future_lain_cli.utils import (CHART_DIR_NAME, ensure_absent, error, helm,
+                                   kubectl)
 
 TESTS_BASE_DIR = dirname(abspath(__file__))
 DUMMY_APPNAME = 'dummy'
@@ -16,6 +17,15 @@ TEST_CLUSTER = 'bei'
 DUMMY_URL = f'http://{DUMMY_APPNAME}.{TEST_CLUSTER}.ein.plus'
 # this url will point to proc.web-dev in example_lain_yaml
 DUMMY_DEV_URL = f'http://{DUMMY_APPNAME}-dev.{TEST_CLUSTER}.ein.plus'
+
+
+def tell_deployed_images(appname):
+    res = kubectl('get', 'po', '-ojsonpath={..image}', '-l', f'app.kubernetes.io/name={appname}', capture_output=True)
+    if res.returncode:
+        error(res.stdout, exit=1)
+
+    images = set(res.stdout.decode('utf-8').split(' "'))
+    return images
 
 
 def run(*args, returncode=0, **kwargs):

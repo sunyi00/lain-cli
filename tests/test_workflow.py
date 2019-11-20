@@ -5,8 +5,9 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from future_lain_cli.lain import lain
 from future_lain_cli.utils import kubectl, yadu, yalo
-from tests.conftest import (CHART_DIR_NAME, DUMMY_APPNAME, DUMMY_IMAGE_TAG,
-                            DUMMY_URL, DUMMY_DEV_URL, TEST_CLUSTER, run)
+from tests.conftest import (CHART_DIR_NAME, DUMMY_APPNAME, DUMMY_DEV_URL,
+                            DUMMY_IMAGE_TAG, DUMMY_URL, TEST_CLUSTER, run,
+                            tell_deployed_images)
 
 
 def test_workflow(dummy):
@@ -28,6 +29,10 @@ def test_workflow(dummy):
     dummy_env = url_get_json(DUMMY_URL)
     assert dummy_env['env']['FOO'] == 'BAR'
     assert dummy_env['secretfile'] == 'I\nAM\nBATMAN'
+    # check imageTag is correct
+    deployed_images = tell_deployed_images(DUMMY_APPNAME)
+    assert len(deployed_images) == 1
+    assert DUMMY_IMAGE_TAG in deployed_images.pop()
     # add one extra ingress rule to values.yaml
     values_path = join(CHART_DIR_NAME, 'values.yaml')
     with open(values_path) as f:
@@ -39,8 +44,9 @@ def test_workflow(dummy):
         'paths': ['/'],
     })
     yadu(values, values_path)
-    # deploy again, and check if the new ingress rule is created
+    # deploy again to create newly added ingress rule
     run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])
+    # and check if the new ingress rule is created
     res = kubectl('get', 'ing', f'{DUMMY_APPNAME}-dev-{TEST_CLUSTER}-ein-plus')
     assert not res.returncode
     dummy_dev_env = url_get_json(DUMMY_DEV_URL)

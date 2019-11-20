@@ -107,9 +107,8 @@ def use(ctx, cluster):
 @lain.command()
 @click.argument('whatever', nargs=-1)
 @click.option('--set', 'pairs', multiple=True, type=KVPairType(), help='Override values in values.yaml, same as helm')
-@click.option('--force', is_flag=True, help='Force resource updates through a replacement strategy')
 @click.pass_context
-def deploy(ctx, whatever, pairs, force):
+def deploy(ctx, whatever, pairs):
     """\b
     deploy your app.
     for lain4 clusters:
@@ -146,15 +145,11 @@ def deploy(ctx, whatever, pairs, force):
     While being deployed, you can use kubectl to check the status of you app:
         kubectl get po -l app.kubernetes.io/name={appname}
         kubectl describe po [POD_NAME]
-    Remember, if this upgrade only contains config changes, Kubernetes will not restart your containers, you'll have to do this yourself:
-        kubectl delete po -l app.kubernetes.io/name={appname}
+        kubectl logs -f [POD_NAME]
     '''
     echo(headsup)
     set_clause = tell_helm_set_clause(pairs)
     options = ['--atomic', '--install', '--wait', '--set', set_clause]
-    if force:
-        options.append('--force')
-
     # if chart/values-[CLUSTER].yaml exists, use it
     values_file = tell_cluster_values_file()
     if values_file:
@@ -235,8 +230,8 @@ def add(ctx, pairs):
         goodjob('You just added nothing, what a great way to use this command', exit=True)
 
     env_dic = tell_secret(ctx.obj['env_name'], init='env')
-    for pair in pairs:
-        env_dic['data'].update(pair)
+    for k, v in pairs:
+        env_dic['data'][k] = v
 
     apply_secret(env_dic)
     goodjob(f'env edited, you can use `lain env show` to view them', exit=True)
