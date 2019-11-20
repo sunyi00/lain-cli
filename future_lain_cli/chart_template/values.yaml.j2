@@ -68,7 +68,10 @@ deployments:
       limits:
         # ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-cpu
         cpu: 1000m  # 1000m is equivalent to 1 CPU
+        {%- if loop.first %}
+        # memory 千万不要写小 m 啊, m 是一个小的要死的单位, 写上去一定会突破容器的最低内存导致无法启动, 要写 M, Mi, G, Gi 这种才好
         # ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory
+        {%- endif %}
         memory: {{ proc.memory | default('1Gi') }}
       requests:
         cpu: 10m

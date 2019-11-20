@@ -549,6 +549,10 @@ def populate_helm_context_from_lain_yaml(obj, lain_yaml):
             k, v = env.split('=')
             env_dict[k] = v
 
+        # fix memory unit
+        if clause.get('memory', '').endswith('m'):
+            clause['memory'] = clause['memory'].replace('m', 'Mi')
+
         clause['env'] = env_dict
         secret_files = clause.pop('secret_files', None)
         # collect all secret_files for easy rendering
