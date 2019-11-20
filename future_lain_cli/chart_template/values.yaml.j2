@@ -97,6 +97,9 @@ deployments:
 cronjobs:
   {%- for cron_name, cron in crons.items() %}
   {{ cron_name }}:
+    {%- if loop.first %}
+    # schedule 会用 UTC 时区来解释, 注意自行 -8h
+    {%- endif %}
     schedule: "{{ cron.schedule }}"
     {%- if loop.first %}
     # 默认的定时任务调度策略是 Replace, 这意味着如果上一个任务还没执行完, 下一次 job 就开始了的话,

@@ -467,7 +467,7 @@ def yadu(dic, f=None):
     if not f:
         return s
     if hasattr(f, 'read'):
-        f.write(s)
+        f.write(s.encode('utf-8'))
     elif isinstance(f, str):
         with open(f, 'wb') as dest:
             dest.write(s.encode('utf-8'))
@@ -523,7 +523,7 @@ def populate_helm_context_from_lain_yaml(obj, lain_yaml):
             obj[k] = clause
         elif k == 'web':
             obj['procs']['web'] = clause
-        elif k.startswith('proc.') or k.startswith('worker'):
+        elif k.split('.', 1)[0] in {'proc', 'worker', 'web'}:
             proc_name = k.split('.', 1)[-1]
             obj['procs'][proc_name] = clause
         elif k.startswith('cron.'):
