@@ -9,7 +9,8 @@ import subprocess
 import sys
 from inspect import cleandoc
 from os import getcwd, readlink, remove
-from os.path import abspath, basename, dirname, expanduser, isdir, isfile, join
+from os.path import (abspath, basename, dirname, expanduser, isabs, isdir,
+                     isfile, join)
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from types import MappingProxyType
 from urllib.parse import urljoin
@@ -566,7 +567,7 @@ def populate_helm_context_from_lain_yaml(obj, lain_yaml):
         if secret_files:
             for f in secret_files:
                 fname = basename(f)
-                obj['secret_files'][fname] = f
+                obj['secret_files'][fname] = f if isabs(f) else join('/lain/app', f)
 
 
 example_lain_yaml = """# ref: https://github.com/ein-plus/dummy
