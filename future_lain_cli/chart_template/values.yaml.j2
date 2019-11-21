@@ -88,6 +88,16 @@ deployments:
     # 类似于一个 nginx upstream 里可以写好多个 server, 自己想象吧
     # 另外, 这里为了书写方便, 和照顾大多数应用的习惯, 默认应用最多只需要暴露一个 TCP 端口
     # 如果你的奇葩应用需要高级定制, 比如需要更多端口, 甚至走 UDP, 请寻求 SA 帮助
+
+    # 如果你需要, 你可以这样声明 Kubernetes 的健康检查:
+    # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
+    # readinessProbe:
+    #   httpGet:
+    #     path: /_status
+    #     port: {{ proc.port }}
+    #   initialDelaySeconds: 25
+    #   periodSeconds: 2
+    #   failureThreshold: 1
     {%- endif %}
     containerPort: {{ proc.port }}
     {%- endif %}
