@@ -84,6 +84,13 @@ def goodjob(s, exit=None):
         context().exit(0)
 
 
+def warn(s, exit=None):
+    s = cleandoc(s)
+    click.echo(click.style(s, fg='magenta'))
+    if exit is not None:
+        context().exit(exit)
+
+
 def error(s, exit=None):
     s = cleandoc(s)
     click.echo(click.style(s, fg='red'))
@@ -324,7 +331,7 @@ def ensure_initiated(chart=False, secret=False):
             if res.returncode:
                 tutorial = '\n'.join(f'lain secret add {f}' for f in subPaths)
                 err = f'''
-                Secret {secret} not found, you should create them:
+                Secret {subPaths} not found, you should create them:
                     lain use {cluster}
                     {tutorial}
                 And if you ever need to add more files, env or edit them, do this:
@@ -368,7 +375,7 @@ def kubectl(*args, exit=None, **kwargs):
         return kubectl(*args, exit=exit, **kwargs)
     env = os.environ
     env['PATH'] = f'{KUBECTL_BIN}:{env["PATH"]}'
-    cmd = ['kubectl', *args]
+    cmd = ['kubectl', '--request-timeout=2', *args]
     excall(cmd)
     completed = subprocess.run(cmd, env=env, **kwargs)
     if exit:
@@ -492,7 +499,7 @@ def populate_helm_context(obj):
         obj['secret_name'] = f'{appname}-secret'
         obj['env_name'] = f'{appname}-env'
     except FileNotFoundError:
-        error(f'{values_yaml} not found, use `lain init` if you are managing a lain4 app')
+        warn(f'{values_yaml} not found, use `lain init` if you are managing a lain4 app')
         raise
     except KeyError:
         error(f'{values_yaml} doesn\'t look like a valid lain4 yaml, if you want to use lain4 for this app, use `lain inif -f`', exit=1)

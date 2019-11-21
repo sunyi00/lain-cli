@@ -12,6 +12,7 @@ from future_lain_cli.utils import (CHART_DIR_NAME, ensure_absent, error, helm,
 TESTS_BASE_DIR = dirname(abspath(__file__))
 DUMMY_APPNAME = 'dummy'
 DUMMY_REPO = f'tests/{DUMMY_APPNAME}'
+# dummy also has a :latest tag, see dummy/Makefile
 DUMMY_IMAGE_TAG = 'release-1574173182-762b7a951e2059543203a7815ca96757527b4161'
 TEST_CLUSTER = 'bei'
 DUMMY_URL = f'http://{DUMMY_APPNAME}.{TEST_CLUSTER}.ein.plus'
@@ -42,6 +43,7 @@ def dummy(request):
         run(lain, args=['use', TEST_CLUSTER])
         ensure_absent(join(DUMMY_REPO, CHART_DIR_NAME))
         helm('delete', DUMMY_APPNAME)
+        kubectl('delete', 'secret', f'{DUMMY_APPNAME}-env', f'{DUMMY_APPNAME}-secret')
 
     tear_down()
     sys.path.append(TESTS_BASE_DIR)

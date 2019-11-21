@@ -44,10 +44,11 @@ deployments:
       {%- endfor %}
     {%- endif %}
     {%- if loop.first %}
-    # 应用在不同的集群可能需要设置不同的实例数, 这个可以在 values-[CLUSTER].yaml 里(类似)这样写, helm 会帮你自动合并变量:
+    # 应用在不同的集群可能需要设置不同的实例数(甚至不同的镜像), 这个可以在 values-[CLUSTER].yaml 里(类似)这样写, helm 会帮你自动合并变量:
     # deployments:
     #   {{ proc_name }}:
     #     replicaCount: 3
+    #     imageTag: another-tag
     {%- endif %}
     replicaCount: 1
     {%- if loop.first %}

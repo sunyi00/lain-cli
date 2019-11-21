@@ -41,7 +41,11 @@ spec:
               value: {{ $element | quote }}
             {{- end }}
             {{- end }}
+          {{- if hasKey $deployment "imageTag" }}
+          image: {{ printf "%s/%s:%s" $.Values.registry $.Values.appname $deployment.imageTag }}
+          {{- else }}
           image: {{ include "chart.image" $ }}
+          {{- end }}
           imagePullPolicy: IfNotPresent
           {{- with $deployment.containerPort }}
           ports:

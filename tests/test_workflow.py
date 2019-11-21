@@ -44,9 +44,12 @@ def test_workflow(dummy):
         'paths': ['/'],
     })
     yadu(values, values_path)
-    # adjust replicaCount in override values file
-    replicaCount = 3
-    override_values = {'deployments': {'web-dev': {'replicaCount': replicaCount}}}
+    overrideReplicaCount = 3
+    overrideImageTag = 'latest'
+    # add another env
+    run(lain, args=['env', 'add', 'SCALE=BANANA'])
+    # adjust replicaCount and imageTag in override values file
+    override_values = {'deployments': {'web-dev': {'replicaCount': overrideReplicaCount, 'imageTag': overrideImageTag}}}
     yadu(override_values, f'{CHART_DIR_NAME}/values-{TEST_CLUSTER}.yaml')
     # deploy again to create newly added ingress rule
     run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])
@@ -56,9 +59,15 @@ def test_workflow(dummy):
     dummy_dev_env = url_get_json(DUMMY_DEV_URL)
     # env is overriden in dummy-dev, see example_lain_yaml
     assert dummy_dev_env['env']['FOO'] == 'SPAM'
+    assert dummy_dev_env['env']['SCALE'] == 'BANANA'
     # check if replicaCount is correctly overriden
     res = kubectl('get', 'deploy', f'{DUMMY_APPNAME}-web-dev', '-o=jsonpath={.spec.replicas}', capture_output=True)
-    assert res.stdout.decode('utf-8').strip() == str(replicaCount)
+    assert res.stdout.decode('utf-8').strip() == str(overrideReplicaCount)
+    # check if imageTag is correctly overriden
+    res = kubectl('get', 'deploy', f'{DUMMY_APPNAME}-web', '-o=jsonpath={.spec.template.spec..image}', capture_output=True)
+    assert res.stdout.decode('utf-8').strip().endswith(DUMMY_IMAGE_TAG)
+    res = kubectl('get', 'deploy', f'{DUMMY_APPNAME}-web-dev', '-o=jsonpath={.spec.template.spec..image}', capture_output=True)
+    assert res.stdout.decode('utf-8').strip().endswith(overrideImageTag)
 
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(3))

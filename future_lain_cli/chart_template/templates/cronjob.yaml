@@ -50,7 +50,11 @@ spec:
                   value: {{ $element | quote }}
                 {{- end }}
                 {{- end }}
+              {{- if hasKey $cronjob "imageTag" }}
+              image: {{ printf "%s/%s:%s" $.Values.registry $.Values.appname $cronjob.imageTag }}
+              {{- else }}
               image: {{ include "chart.image" $ }}
+              {{- end }}
               imagePullPolicy: IfNotPresent
               resources:
                 {{- toYaml $cronjob.resources | nindent 16 }}
