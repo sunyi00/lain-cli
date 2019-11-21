@@ -1,4 +1,5 @@
 import base64
+import inspect
 import json
 import os
 import re
@@ -8,7 +9,8 @@ import stat
 import subprocess
 import sys
 from inspect import cleandoc
-from os import getcwd, readlink, remove
+from os import getcwd as cwd
+from os import readlink, remove
 from os.path import (abspath, basename, dirname, expanduser, isabs, isdir,
                      isfile, join)
 from tempfile import NamedTemporaryFile, TemporaryDirectory
@@ -49,7 +51,6 @@ FUTURE_CLUSTERS = MappingProxyType({
 LEGACY_CLUSTERS = frozenset({'azure', 'ein', 'poc', 'test'})
 CLUSTERS = set(FUTURE_CLUSTERS) | LEGACY_CLUSTERS
 LEGACY_IMAGE_PATTERN = re.compile(r'^release-\d+-[^-]+$')
-CWD = getcwd()
 
 
 def quote(s):
@@ -154,6 +155,11 @@ class Registry:
     def get(self, url, *args, **kwargs):
         return self.request('GET', url, *args, **kwargs)
 
+    def make_image(self, tag):
+        ctx = context()
+        repo = ctx.obj['appname']
+        return f'{self.host}/{repo}:{tag}'
+
     def tags_list(self, repo_name):
         path = f'/v2/{repo_name}/tags/list'
         responson = self.get(path).json()
@@ -249,12 +255,12 @@ def tell_helm_set_clause(pairs):
     if pair:
         _, image_tag = pair
 
-    image_tag = tell_image(image_tag)
+    image_tag = tell_image_tag(image_tag)
     kvlist.append(f'imageTag={image_tag}')
     return ','.join(kvlist)
 
 
-def tell_image(image_tag=None):
+def tell_image_tag(image_tag=None):
     """really smart method to figure out which image_tag is the right one to deploy:
         1. if image_tag isn't provided, obtain from legacy_lain
         2. check for existence against the specified registry
@@ -273,13 +279,19 @@ def tell_image(image_tag=None):
     if image_tag not in existing_tags:
         latest_tag = max(existing_tags)
         recent_tags = '\n            '.join(existing_tags[:5])
+        caller_name = inspect.stack()[1].function
+        if caller_name == 'update_image':
+            amender = f'lain update-image --deduce'
+        else:
+            amender = f'lain deploy --set imageTag={latest_tag}'
+
         err = f'''
         Image not found:
             {registry.host}/{appname}:{image_tag}
 
         If you really need to deploy this version, do a lain build + push first.
         If you'd like to deploy the latest existing image:
-            lain deploy --set imageTag={latest_tag}
+            {amender}
         If you'd like to choose an existing image, here's some recent image tags for you to copy:
             {recent_tags}
         You can check out the rest at {registry.base_url}/v2/{appname}/tags/list.
@@ -290,25 +302,23 @@ def tell_image(image_tag=None):
     return image_tag
 
 
-def legacy_lain(*args, exit=None, fake_lain_yaml=False, **kwargs):
-    """sometimes we wanna use chart/values.yaml as LAIN_YAML, this the fake_lain_yaml flag"""
+def legacy_lain(*args, exit=None, fake_lain_yaml=True, **kwargs):
+    """sometimes we wanna use chart/values.yaml as LAIN_YAML, thus the fake_lain_yaml flag"""
     cmd = ['legacy_lain', *args]
-    excall(cmd)
     # use chart/values.yaml as lain.yaml if it exists
     values_yaml = f'./{CHART_DIR_NAME}/values.yaml'
-    if not isfile(values_yaml):
-        res = subprocess.run(cmd, env=ENV, **kwargs)
-    else:
-        if fake_lain_yaml:
-            # legacy_lain really needs lain.yaml to be in the same directory as the
-            # docker build context, yet nobody want to maintain legacy_lain code, so
-            # it's easiest to just copy chart/values.yaml into a tempfile
-            lain_yaml = NamedTemporaryFile(prefix=f'{CWD}/')
-            lain_yaml.write(open(values_yaml, 'rb').read())
-            ENV['LAIN_YAML'] = lain_yaml.name
+    temp_lain_yaml = NamedTemporaryFile(prefix=f'{cwd()}/')
+    if isfile(values_yaml) and fake_lain_yaml:
+        # legacy_lain really needs lain.yaml to be in the same directory as the
+        # docker build context, yet nobody want to maintain legacy_lain code, so
+        # it's easiest to just copy chart/values.yaml into a tempfile
+        temp_lain_yaml.write(open(values_yaml, 'rb').read())
+        ENV['LAIN_YAML'] = temp_lain_yaml.name
+        temp_lain_yaml.seek(0)
 
-        res = subprocess.run(cmd, env=ENV, **kwargs)
-
+    excall(cmd)
+    res = subprocess.run(cmd, env=ENV, **kwargs)
+    temp_lain_yaml.close()
     if exit:
         context().exit(res.returncode)
 

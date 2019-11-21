@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 
 from future_lain_cli.lain import lain
-from future_lain_cli.utils import (CHART_DIR_NAME, ensure_absent, error, helm,
+from future_lain_cli.utils import (CHART_DIR_NAME, ensure_absent, error, helm, Registry, FUTURE_CLUSTERS,
                                    kubectl)
 
 TESTS_BASE_DIR = dirname(abspath(__file__))
@@ -49,3 +49,9 @@ def dummy(request):
     sys.path.append(TESTS_BASE_DIR)
     chdir(DUMMY_REPO)
     request.addfinalizer(tear_down)
+
+
+@pytest.fixture
+def registry(request):
+    cluster_info = FUTURE_CLUSTERS[TEST_CLUSTER]
+    return Registry(cluster_info['registry'])

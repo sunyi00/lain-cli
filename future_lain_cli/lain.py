@@ -3,22 +3,23 @@
 import os
 import shutil
 from io import StringIO
+from os import getcwd as cwd
 from os.path import basename, dirname, expanduser, isfile, join
 
 import click
 
-from future_lain_cli.utils import (CHART_DIR_NAME, CWD, FUTURE_CLUSTERS,
+from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
-                                   apply_secret, deploy_toast, dump_secret,
-                                   echo, edit_file, ensure_absent,
+                                   Registry, apply_secret, deploy_toast,
+                                   dump_secret, echo, edit_file, ensure_absent,
                                    ensure_initiated, error, example_lain_yaml,
                                    find, get_app_status, goodjob, helm,
                                    kubectl, legacy_lain, populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
                                    tell_cluster, tell_cluster_info,
                                    tell_cluster_values_file,
-                                   tell_helm_set_clause, tell_secret,
-                                   template_env, yadu, yalo)
+                                   tell_helm_set_clause, tell_image_tag,
+                                   tell_secret, template_env, yadu, yalo)
 
 
 @click.group()
@@ -32,7 +33,7 @@ def lain(ctx):
 
 
 @lain.command()
-@click.option('--appname', default=basename(CWD), help='Name of the app, default to the lain.yaml appname. But if --lain-yaml isn\'t provided, the dirname of cwd will be used')
+@click.option('--appname', default=basename(cwd()), help='Name of the app, default to the lain.yaml appname. But if --lain-yaml isn\'t provided, the dirname of cwd will be used')
 @click.option('--lain-yaml', type=click.File(), default=lambda: StringIO(example_lain_yaml), help='Generate helm charts from the given lain.yaml, if not provided, an example chart will be generated')
 @click.option('--force', '-f', is_flag=True, help=f'Remove ./{CHART_DIR_NAME} and then regenerate')
 @click.pass_context
@@ -105,6 +106,39 @@ def use(ctx, cluster):
 
 
 @lain.command()
+@click.argument('deployments', nargs=-1)
+@click.option('--deduce', is_flag=True, help='use latest imageTag from registry rather than `lain meta`')
+@click.pass_context
+def update_image(ctx, deployments, deduce):
+    """update, and only update image for some deploy"""
+    choices = set(ctx.obj['values']['deployments'].keys())
+    if not deployments:
+        error(f'specify at least one deployment, choose from: {choices}', exit=1)
+
+    deployments = set(deployments)
+    if not deployments.issubset(choices):
+        wrong_deployments = deployments.difference(choices)
+        error(f'unknown deploy {wrong_deployments}, choose from: {choices}', exit=1)
+
+    registry = Registry(tell_cluster_info()['registry'])
+    appname = ctx.obj['appname']
+    if deduce:
+        recent_tags = registry.images_list(appname)
+        if not recent_tags:
+            error('wow, there\'s no pushed image at all', exit=1)
+
+        image_tag = recent_tags[0]
+    else:
+        image_tag = tell_image_tag()
+
+    image = registry.make_image(image_tag)
+    for deploy in deployments:
+        res = kubectl('set', 'image', f'deployment/{appname}-{deploy}', f'{deploy}={image}', '--all')
+        if res.returncode:
+            error('abort due to kubectl failure, if you don\'t understand the above error output, seek help from SA')
+
+
+@lain.command()
 @click.argument('whatever', nargs=-1)
 @click.option('--set', 'pairs', multiple=True, type=KVPairType(), help='Override values in values.yaml, same as helm')
 @click.pass_context
@@ -169,8 +203,10 @@ def build(ctx):
     legacy_lain functionality, if build clause exists in chart/values.yaml,
     then uses values.yaml as lain.yaml. otherwise this command behaves just
     like legacy_lain"""
-    if 'build' in ctx.obj['values']:
-        fake_lain_yaml=True
+    if 'build' not in ctx.obj['values']:
+        fake_lain_yaml = False
+    else:
+        fake_lain_yaml = True
 
     legacy_lain('build', fake_lain_yaml=fake_lain_yaml)
 
@@ -202,7 +238,7 @@ def push(ctx, whatever):
         if res.returncode:
             error(f'legacy_lain tag failed, maybe you need to lain use {cluster} one more time', exit=1)
 
-        legacy_lain('push', cluster, exit=True)
+        whatever = [cluster]
 
     legacy_lain('push', *whatever)
 
