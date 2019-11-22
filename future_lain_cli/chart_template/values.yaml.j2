@@ -169,6 +169,28 @@ ingresses:
 # 别的应用如果需要在集群内访问 {{ appname }}, 可以直接通过 {{ appname }}-{{ deployName }} 来访问
 # 只要你在 deployment 里声明了 containerPort, chart 模板就会帮你创建出免费的 service, 作为集群的内部访问域名
 
+# 老应用们很多都依赖宿主机的 /etc/hosts, 为了迁移的兼容性只好这样写一下了
+# 如果你的应用不需要这些 hosts, 删了就好
+hostAliases:
+  - ip: "172.32.4.11"
+    hostnames:
+      - "ein-es-m1"
+  - ip: "172.32.4.12"
+    hostnames:
+      - "ein-es-m2"
+  - ip: "172.32.4.13"
+    hostnames:
+      - "ein-es-m3"
+  - ip: "172.31.29.41"
+    hostnames:
+      - "aws-sys1"
+  - ip: "172.31.26.9"
+    hostnames:
+      - "aws-sys2"
+  - ip: "172.31.26.10"
+    hostnames:
+      - "aws-sys3"
+
 # LEGACY LAIN BLOCK
 
 # build clause 负责描述 legacy_lain 的构建

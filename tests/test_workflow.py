@@ -37,6 +37,8 @@ def test_workflow(dummy, registry):
     dummy_env = url_get_json(DUMMY_URL)
     assert dummy_env['env']['FOO'] == 'BAR'
     assert dummy_env['secretfile'] == 'I\nAM\nBATMAN'
+    # check if hostAliases is working
+    assert 'ein-es-m1' in dummy_env['hosts']
     # check imageTag is correct
     deployed_images = tell_deployed_images(DUMMY_APPNAME)
     assert len(deployed_images) == 1

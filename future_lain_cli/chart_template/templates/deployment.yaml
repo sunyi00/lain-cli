@@ -23,6 +23,10 @@ spec:
       securityContext:
         {{- toYaml $deployment.podSecurityContext | nindent 8 }}
       {{- end }}
+      {{- with $.Values.hostAliases }}
+      hostAliases:
+        {{- toYaml $.Values.hostAliases | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ $deployName }}
           command:

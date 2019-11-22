@@ -13,7 +13,7 @@ TESTS_BASE_DIR = dirname(abspath(__file__))
 DUMMY_APPNAME = 'dummy'
 DUMMY_REPO = f'tests/{DUMMY_APPNAME}'
 # dummy also has a :latest tag, see dummy/Makefile
-DUMMY_IMAGE_TAG = 'release-1574173182-762b7a951e2059543203a7815ca96757527b4161'
+DUMMY_IMAGE_TAG = 'release-1574411941-f4fca3bd2bf90691491c2280ef399f5dfa3b4daa'
 TEST_CLUSTER = 'bei'
 DUMMY_URL = f'http://{DUMMY_APPNAME}.{TEST_CLUSTER}.ein.plus'
 # this url will point to proc.web-dev in example_lain_yaml
