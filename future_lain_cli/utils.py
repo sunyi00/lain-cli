@@ -102,6 +102,14 @@ def error(s, exit=None):
 
 deploy_toast_str = '''Your pods have all been created, you can see them using:
     kubectl get po -l app.kubernetes.io/name={{ appname }}
+to tail logs:
+    {%- for deploy_name in values.deployments %}
+    kubectl logs -f --tail 10 -l app.kubernetes.io/instance={{ appname }}-{{ deploy_name }}
+    {%- if loop.index >= 2 %}
+    ...
+    {% break %}
+    {%- endif %}
+    {%- endfor %}
 
 Remember, if this upgrade only contains config changes, Kubernetes will not restart your containers, you'll have to do this yourself:
     kubectl delete po -l app.kubernetes.io/name={{ appname }}
@@ -118,7 +126,7 @@ To access your app through internal domain:
 To test your cronjob:
     {%- for job_name in values.cronjobs.keys() %}
     kubectl create job --from=cronjob/{{ appname }}-{{ job_name }} {{ appname }}-{{ job_name }}-test
-    {%- if loop.index >= 3 %}
+    {%- if loop.index >= 2 %}
     ...
     {% break %}
     {% endif %}
@@ -130,7 +138,7 @@ use grafana for monitoring:
     {{ grafana_url }}
 {%- endif %}
 {%- if kibana %}
-kibana, for log output:
+kibana, for log output and analysing:
     http://{{ kibana }}/app/logtrail#/?q=kubernetes.pod_name.keyword:{{ appname }}*&h=All&t=Now&i=logstash-*
 {%- endif %}
 '''
