@@ -59,7 +59,18 @@ def test_workflow(dummy, registry):
     # add another env
     run(lain, args=['env', 'add', 'SCALE=BANANA'])
     # adjust replicaCount and imageTag in override values file
-    override_values = {'deployments': {'web-dev': {'replicaCount': overrideReplicaCount, 'imageTag': overrideImageTag}}}
+    override_values = {
+        'deployments': {
+            'web-dev': {
+                'replicaCount': overrideReplicaCount,
+                'imageTag': overrideImageTag,
+            },
+        },
+        # this is just used to ensure helm template rendering
+        'ingressAnnotations': {
+            'nginx.ingress.kubernetes.io/proxy-next-upstream-timeout': 1,
+        },
+    }
     yadu(override_values, f'{CHART_DIR_NAME}/values-{TEST_CLUSTER}.yaml')
     # deploy again to create newly added ingress rule
     run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])

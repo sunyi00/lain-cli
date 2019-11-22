@@ -6,6 +6,11 @@ metadata:
   name: {{ $ingress.host | replace "." "-" }}
   annotations:
     kubernetes.io/ingress.class: lain-external
+    {{- with $.Values.ingressAnnotations }}
+    {{- range $k, $v := $.Values.ingressAnnotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+    {{- end }}
   labels:
     {{- include "chart.labels" $ | nindent 4 }}
 spec:

@@ -165,6 +165,12 @@ ingresses:
 #     paths:
 #       - /
 
+# ingressAnnotations 里可以声明一系列配置, 会注入该应用的 nginx 配置里
+# 具体可以配置的项目见 https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#annotations
+# ingressAnnotations:
+#   nginx.ingress.kubernetes.io/proxy-next-upstream-timeout: 1
+#   nginx.ingress.kubernetes.io/proxy-next-upstream-tries: 1
+
 # 如果你的应用不需要外网访问, 则 ingresses 这一块留空即可, 删了也没问题啦
 # 别的应用如果需要在集群内访问 {{ appname }}, 可以直接通过 {{ appname }}-{{ deployName }} 来访问
 # 只要你在 deployment 里声明了 containerPort, chart 模板就会帮你创建出免费的 service, 作为集群的内部访问域名

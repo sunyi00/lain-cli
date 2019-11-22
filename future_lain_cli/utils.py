@@ -120,18 +120,20 @@ To test your cronjob:
     kubectl create job --from=cronjob/{{ appname }}-{{ job_name }} {{ appname }}-{{ job_name }}-test
     {%- if loop.index >= 3 %}
     ...
-    {%- break %}
+    {% break %}
     {% endif %}
     {%- endfor %}
+{%- endif %}
 
-Here's some very good stuff that you'll like:
-    {%- if grafana_url %}
+{%- if grafana_url %}
+use grafana for monitoring:
     {{ grafana_url }}
-    {%- endif %}
-    {%- if kibana %}
+{%- endif %}
+{%- if kibana %}
+kibana, for log output:
     http://{{ kibana }}/app/logtrail#/?q=kubernetes.pod_name.keyword:{{ appname }}*&h=All&t=Now&i=logstash-*
-    {%- endif %}
-{%- endif %}'''
+{%- endif %}
+'''
 deploy_toast_template = template_env.from_string(deploy_toast_str)
 
 
