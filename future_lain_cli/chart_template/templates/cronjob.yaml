@@ -28,8 +28,10 @@ spec:
         spec:
           restartPolicy: Never
           serviceAccountName: default
+          {{- with $cronjob.podSecurityContext }}
           securityContext:
             {{- toYaml $cronjob.podSecurityContext | nindent 12 }}
+          {{- end }}
           containers:
             - name: {{ $cronjobName }}
               command:

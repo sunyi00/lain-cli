@@ -26,7 +26,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 HELM_WEIRD_STATE = {'failed', 'pending-install'}
 CLI_DIR = dirname(abspath(__file__))
 TEMPLATE_DIR = join(CLI_DIR, 'chart_template')
-template_env = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_DIR))
+template_env = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_DIR), extensions=['jinja2.ext.loopcontrols'])
 CHART_DIR_NAME = 'chart'
 ENV = os.environ
 LAIN_EXBIN_PREFIX = ENV.get('LAIN_EXBIN_PREFIX') or '/usr/local/bin'
@@ -118,6 +118,10 @@ To access your app through internal domain:
 To test your cronjob:
     {%- for job_name in values.cronjobs.keys() %}
     kubectl create job --from=cronjob/{{ appname }}-{{ job_name }} {{ appname }}-{{ job_name }}-test
+    {%- if loop.index >= 3 %}
+    ...
+    {%- break %}
+    {% endif %}
     {%- endfor %}
 
 Here's some very good stuff that you'll like:
@@ -128,7 +132,7 @@ Here's some very good stuff that you'll like:
     http://{{ kibana }}/app/logtrail#/?q=kubernetes.pod_name.keyword:{{ appname }}*&h=All&t=Now&i=logstash-*
     {%- endif %}
 {%- endif %}'''
-deploy_toast_template = Template(deploy_toast_str)
+deploy_toast_template = template_env.from_string(deploy_toast_str)
 
 
 def deploy_toast():

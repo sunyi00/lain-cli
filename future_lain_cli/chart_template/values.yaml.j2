@@ -55,8 +55,8 @@ deployments:
     # 如果你需要用别的用户来运行你的软件, 则在 podSecurityContext 下声明 runAsUser
     # 比如用 root:
     # podSecurityContext: {'runAsUser': 0}
-    {%- endif %}
     podSecurityContext: {}
+    {%- endif %}
     {%- if loop.first %}
     # 关于资源分配:
     # 简而言之, limits 描述了你的应用最多能用到多少资源
@@ -93,7 +93,7 @@ deployments:
     # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
     # readinessProbe:
     #   httpGet:
-    #     path: /_status
+    #     path: /my-healthcheck-api
     #     port: {{ proc.port }}
     #   initialDelaySeconds: 25
     #   periodSeconds: 2
@@ -123,8 +123,8 @@ cronjobs:
     concurrencyPolicy: Replace
     # 重试次数, 默认不做任何重试, 如果你的应用能保证不因为资源问题失败, 可以加上宽容的重试
     backoffLimit: 0
-    {%- endif %}
     podSecurityContext: {}
+    {%- endif %}
     resources:
       limits:
         cpu: 1000m

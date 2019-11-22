@@ -19,8 +19,10 @@ spec:
         {{- include "chart.selectorLabels" $ | nindent 8 }}
     spec:
       serviceAccountName: default
+      {{- with $deployment.podSecurityContext }}
       securityContext:
         {{- toYaml $deployment.podSecurityContext | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ $deployName }}
           command:
