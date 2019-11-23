@@ -1,4 +1,4 @@
-{{- range $ingress := .Values.externalIngresses -}}
+{{- range $ingress := .Values.externalIngresses }}
 ---
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -25,4 +25,4 @@ spec:
               servicePort: 80
         {{- end }}
 
-{{- end -}}
+{{- end }}

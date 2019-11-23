@@ -70,13 +70,23 @@ def test_workflow(dummy, registry):
         'ingressAnnotations': {
             'nginx.ingress.kubernetes.io/proxy-next-upstream-timeout': 1,
         },
+        'externalIngresses': [
+            {'host': 'dummy-public.foo.cn', 'deployName': 'web', 'paths': ['/']},
+            {'host': 'dummy-public.bar.cn', 'deployName': 'web', 'paths': ['/']},
+        ],
     }
     yadu(override_values, f'{CHART_DIR_NAME}/values-{TEST_CLUSTER}.yaml')
     # deploy again to create newly added ingress rule
     run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])
     # check if the new ingress rule is created
-    res = kubectl('get', 'ing', f'{DUMMY_APPNAME}-dev-{TEST_CLUSTER}-ein-plus')
+    res = kubectl('get', 'ing', '-l', f'app.kubernetes.io/name={DUMMY_APPNAME}', '-o=jsonpath={..name}', capture_output=True)
     assert not res.returncode
+    assert set(res.stdout.decode('utf-8').split()) == {
+        'dummy-bei-ein-plus',
+        'dummy-public-foo-cn',
+        'dummy-dev-bei-ein-plus',
+        'dummy-public-bar-cn',
+    }
     dummy_dev_env = url_get_json(DUMMY_DEV_URL)
     # env is overriden in dummy-dev, see example_lain_yaml
     assert dummy_dev_env['env']['FOO'] == 'SPAM'
