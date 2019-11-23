@@ -14,7 +14,7 @@ namespace=$(kubectl get secret/$token_name -o jsonpath='{.data.namespace}' | bas
 cat > rbac.yml << EOF
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: default
 rules:
@@ -50,13 +50,13 @@ rules:
   - update
   - delete
 ---
-kind: ClusterRoleBinding
+kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: default
 subjects:
 - kind: ServiceAccount
