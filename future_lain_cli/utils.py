@@ -74,30 +74,39 @@ def excall(s, env=None):
     click.echo(click.style(s, fg='bright_yellow'), err=True)
 
 
-def echo(s):
-    s = cleandoc(s)
-    click.echo(click.style(s))
+def ensure_str(s):
+    try:
+        return s.decode('utf-8')
+    except:
+        return s
+
+
+def echo(s, fg=None, exit=None, err=False):
+    s = cleandoc(ensure_str(s))
+    click.echo(click.style(s, fg=fg), err=err)
+    if exit:
+        context().exit(exit)
 
 
 def goodjob(s, exit=None):
-    s = cleandoc(s)
-    click.echo(click.style(s, fg='green'))
     if exit:
-        context().exit(0)
+        exit = 0
+
+    return echo(s, fg='green', exit=exit, err=True)
 
 
 def warn(s, exit=None):
-    s = cleandoc(s)
-    click.echo(click.style(s, fg='magenta'))
-    if exit is not None:
-        context().exit(exit)
+    if exit:
+        exit = 1
+
+    return echo(s, fg='magenta', exit=exit, err=True)
 
 
 def error(s, exit=None):
-    s = cleandoc(s)
-    click.echo(click.style(s, fg='red'))
-    if exit is not None:
-        context().exit(exit)
+    if exit:
+        exit = 1
+
+    return echo(s, fg='red', exit=exit, err=True)
 
 
 deploy_toast_str = '''Your pods have all been created, you can see them using:
@@ -331,7 +340,7 @@ def legacy_lain(*args, exit=None, fake_lain_yaml=True, **kwargs):
         temp_lain_yaml.seek(0)
 
     excall(cmd)
-    res = subprocess.run(cmd, env=ENV, **kwargs)
+    res = subprocess_run(cmd, env=ENV, **kwargs)
     temp_lain_yaml.close()
     if exit:
         context().exit(res.returncode)
@@ -368,9 +377,23 @@ def ensure_initiated(chart=False, secret=False):
     return True
 
 
+def subprocess_run(*args, **kwargs):
+    """when a subprocess fail, using check=True will only output a long
+    python traceback, people want to see command stderr, rather than
+    meaningless tracebacks"""
+    check = kwargs.pop('check', None)
+    res = subprocess.run(*args, **kwargs)
+    if check:
+        code = res.returncode
+        if code:
+            error(res.stderr, exit=code)
+
+    return res
+
+
 def helm(*args, **kwargs):
     try:
-        version_res = subprocess.run(['helm', 'version', '--short'], capture_output=True, check=True)
+        version_res = subprocess_run(['helm', 'version', '--short'], capture_output=True, check=True)
         version = version_res.stdout.decode('utf-8')
     except FileNotFoundError:
         download_binary('helm', dest=HELM_BIN)
@@ -382,13 +405,13 @@ def helm(*args, **kwargs):
         return helm(*args, **kwargs)
     cmd = ['helm', '-n', 'default', *args]
     excall(cmd)
-    completed = subprocess.run(cmd, env=ENV, **kwargs)
+    completed = subprocess_run(cmd, env=ENV, **kwargs)
     return completed
 
 
 def kubectl(*args, exit=None, **kwargs):
     try:
-        version_res = subprocess.run(['kubectl', 'version', '--short', '--client=true'], capture_output=True, check=True)
+        version_res = subprocess_run(['kubectl', 'version', '--short', '--client=true'], capture_output=True)
         version = version_res.stdout.decode('utf-8').strip().split()[-1]
     except FileNotFoundError:
         download_binary('kubectl', dest=KUBECTL_BIN)
@@ -402,7 +425,7 @@ def kubectl(*args, exit=None, **kwargs):
     env['PATH'] = f'{KUBECTL_BIN}:{env["PATH"]}'
     cmd = ['kubectl', '--request-timeout=2', *args]
     excall(cmd)
-    completed = subprocess.run(cmd, env=env, **kwargs)
+    completed = subprocess_run(cmd, env=env, **kwargs)
     if exit:
         context().exit(completed.returncode)
 
@@ -439,7 +462,7 @@ def download_binary(thing, dest):
     assert thing in {'kubectl', 'helm'}
     platform = tell_platform()
     url = f'{CDN}/lain4/{thing}-{platform}'
-    click.echo(f'Don\'t mind me, just gonna download {url} into {dest}. If you wanna put them in other places, export LAIN_EXBIN_PREFIX and try this again')
+    click.echo(f'Don\'t mind me, just gonna download {url} into {dest}. If you wanna put them in other places, export LAIN_EXBIN_PREFIX and try this again', err=True)
     try:
         with requests.get(url, stream=True) as res:
             with open(dest, 'wb') as f:

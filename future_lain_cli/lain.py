@@ -38,6 +38,7 @@ def lain(ctx):
 @click.option('--force', '-f', is_flag=True, help=f'Remove ./{CHART_DIR_NAME} and then regenerate')
 @click.pass_context
 def init(ctx, appname, lain_yaml, force):
+    """generate a helm chart for your app"""
     # just using this command to ensure kubectl is downloaded
     kubectl('version', '--client=true', capture_output=True)
     ctx.obj['appname'] = appname
@@ -181,7 +182,7 @@ def deploy(ctx, whatever, pairs):
         kubectl describe po [POD_NAME]
         kubectl logs -f [POD_NAME]
     '''
-    echo(headsup)
+    echo(headsup, err=True)
     set_clause = tell_helm_set_clause(pairs)
     options = ['--atomic', '--install', '--wait', '--set', set_clause]
     # if chart/values-[CLUSTER].yaml exists, use it
@@ -351,7 +352,6 @@ def show(ctx, whatever):
 
     secret_dic = tell_secret(ctx.obj['secret_name'], init='secret')
     echo(yadu(secret_dic))
-    ctx.exit(0)
 
 
 @secret.command()

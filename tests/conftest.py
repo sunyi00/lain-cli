@@ -1,13 +1,15 @@
 import sys
 from os import chdir
 from os.path import abspath, dirname, join
+from typing import Any, Tuple
 
+import click
 import pytest
 from click.testing import CliRunner
 
 from future_lain_cli.lain import lain
-from future_lain_cli.utils import (CHART_DIR_NAME, ensure_absent, error, helm, Registry, FUTURE_CLUSTERS,
-                                   kubectl)
+from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS, Registry,
+                                   ensure_absent, error, helm, kubectl)
 
 TESTS_BASE_DIR = dirname(abspath(__file__))
 DUMMY_APPNAME = 'dummy'
@@ -18,6 +20,16 @@ TEST_CLUSTER = 'bei'
 DUMMY_URL = f'http://{DUMMY_APPNAME}.{TEST_CLUSTER}.ein.plus'
 # this url will point to proc.web-dev in example_lain_yaml
 DUMMY_DEV_URL = f'http://{DUMMY_APPNAME}-dev.{TEST_CLUSTER}.ein.plus'
+
+
+def tell_pod_deploy_name(s):
+    """
+    >>> tell_pod_deploy_name('dummy-web-dev-7557696ddf-52cc6')
+    'dummy-web-dev'
+    >>> tell_pod_deploy_name('dummy-web-7557696ddf-52cc6')
+    'dummy-web'
+    """
+    return s.rsplit('-', 2)[0]
 
 
 def tell_deployed_images(appname):
@@ -36,6 +48,24 @@ def run(*args, returncode=0, **kwargs):
     return res
 
 
+def run_under_click_context(f, args=(), kwargs=None) -> Tuple[click.testing.Result, Any]:
+    """to test functions that use click context internally, we must invoke them
+    under a active click context, and the only way to do that currently is to
+    wrap the function call in a click command"""
+    cache = {'func_result': None}
+
+    @lain.command()
+    @click.pass_context
+    def wrapper_command(ctx):
+        global func_result
+        func_result = f(*args, **(kwargs or {}))
+        cache['func_result'] = func_result
+
+    runner = CliRunner()
+    res = runner.invoke(lain, args=['wrapper-command'], obj={})
+    return res, cache['func_result']
+
+
 @pytest.fixture(scope='session')
 def dummy(request):
 
@@ -48,6 +78,7 @@ def dummy(request):
     tear_down()
     sys.path.append(TESTS_BASE_DIR)
     chdir(DUMMY_REPO)
+    run(lain, args=['init'])
     request.addfinalizer(tear_down)
 
 

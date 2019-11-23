@@ -1,18 +1,17 @@
 from os.path import join
+from time import sleep
 
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from future_lain_cli.lain import lain
 from future_lain_cli.utils import kubectl, legacy_lain, yadu, yalo
-from tests.conftest import (CHART_DIR_NAME, DUMMY_APPNAME, DUMMY_DEV_URL,
+from tests.conftest import (CHART_DIR_NAME, DUMMY_APPNAME, DUMMY_DEV_URL, tell_pod_deploy_name,
                             DUMMY_IMAGE_TAG, DUMMY_URL, TEST_CLUSTER, run,
                             tell_deployed_images)
 
 
 def test_workflow(dummy, registry):
-    # test lain init
-    run(lain, args=['init'])
     # lain init should failed when chart directory already exists
     run(lain, args=['init'], returncode=1)
     # use -f to remove chart directory and redo
@@ -87,7 +86,11 @@ def test_workflow(dummy, registry):
         'dummy-dev-bei-ein-plus',
         'dummy-public-bar-cn',
     }
+    # check pod name match its corresponding deploy name
+    dummy_env = url_get_json(DUMMY_URL)
+    assert tell_pod_deploy_name(dummy_env['env']['HOSTNAME']) == f'{DUMMY_APPNAME}-web'
     dummy_dev_env = url_get_json(DUMMY_DEV_URL)
+    assert tell_pod_deploy_name(dummy_dev_env['env']['HOSTNAME']) == f'{DUMMY_APPNAME}-web-dev'
     # env is overriden in dummy-dev, see example_lain_yaml
     assert dummy_dev_env['env']['FOO'] == 'SPAM'
     assert dummy_dev_env['env']['SCALE'] == 'BANANA'
