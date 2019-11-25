@@ -25,7 +25,7 @@ requirements = [
     # future lain
     'click>=7.0',
     'jinja2>=2.10.3',
-
+    'prompt-toolkit>=3.0.0',
 ]
 
 setup(

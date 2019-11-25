@@ -1,14 +1,14 @@
 from os.path import join
-from time import sleep
 
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from future_lain_cli.lain import lain
-from future_lain_cli.utils import kubectl, legacy_lain, yadu, yalo
-from tests.conftest import (CHART_DIR_NAME, DUMMY_APPNAME, DUMMY_DEV_URL, tell_pod_deploy_name,
+from future_lain_cli.utils import context, kubectl, legacy_lain, yadu, yalo
+from tests.conftest import (CHART_DIR_NAME, DUMMY_APPNAME, DUMMY_DEV_URL,
                             DUMMY_IMAGE_TAG, DUMMY_URL, TEST_CLUSTER, run,
-                            tell_deployed_images)
+                            run_under_click_context, tell_deployed_images,
+                            tell_pod_deploy_name)
 
 
 def test_workflow(dummy, registry):
@@ -75,6 +75,18 @@ def test_workflow(dummy, registry):
         ],
     }
     yadu(override_values, f'{CHART_DIR_NAME}/values-{TEST_CLUSTER}.yaml')
+
+    def get_helm_values():
+        ctx = context()
+        helm_values = ctx.obj['values']
+        return helm_values
+
+    # check if values-bei.yaml currectly overrides helm context
+    cmd_result, helm_values = run_under_click_context(get_helm_values)
+    assert helm_values['deployments']['web-dev']['replicaCount'] == overrideReplicaCount
+    # this value is the same as before, in example_lain_yaml
+    assert helm_values['deployments']['web-dev']['containerPort'] == 5000
+
     # deploy again to create newly added ingress rule
     run(lain, args=['deploy', '--set', f'imageTag={DUMMY_IMAGE_TAG}'])
     # check if the new ingress rule is created
