@@ -16,12 +16,13 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    dump_secret, echo, edit_file, ensure_absent,
                                    ensure_initiated, error, example_lain_yaml,
                                    find, get_app_status, goodjob, helm,
-                                   kubectl, legacy_lain, populate_helm_context,
+                                   kubectl, legacy_lain, pick_pod,
+                                   populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
-                                   tell_cluster, tell_cluster_info,
-                                   tell_cluster_values_file,
+                                   tell_best_deploy, tell_cluster,
+                                   tell_cluster_info, tell_cluster_values_file,
                                    tell_helm_set_clause, tell_image_tag,
-                                   tell_secret, template_env, yadu, yalo)
+                                   tell_secret, template_env, warn, yadu, yalo)
 
 
 @click.group()
@@ -101,6 +102,45 @@ def status(ctx):
         error('not in a lain4 app repo, nothing to do', exit=1)
 
     display_app_status()
+
+
+@lain.command()
+@click.argument('deploy_and_command', nargs=-1)
+@click.pass_context
+def x(ctx, deploy_and_command):
+    """this command helps you with kubectl exec, insanely easy to use:
+        lain x
+        lain x web
+        lain x web-dev bash
+        lain x web-dev bash -c "ls | grep foo"
+        lain x bash -c "ls | grep foo"
+    """
+    deploy_names = set(ctx.obj['values']['deployments'])
+    if deploy_and_command:
+        deploy, *cmd = deploy_and_command
+        if deploy not in deploy_names:
+            cmd = deploy_and_command
+            warn(f'{deploy} is not a deploy name, thus interpreting the command as `{cmd}`')
+            deploy = tell_best_deploy()
+
+        cmd = cmd or ['bash']
+    else:
+        deploy = tell_best_deploy()
+        cmd = ['bash']
+
+    podname = pick_pod(deploy_name=deploy)
+    if not podname:
+        # if user specified no arguments at all
+        # we'll pick any pod to do this exec
+        if not deploy_and_command:
+            podname = pick_pod()
+            appname = ctx.obj['appname']
+            if not podname:
+                error(f'no pod found for app {appname}', exit=1)
+        else:
+            error(f'no pod found for deploy {deploy}', exit=1)
+
+    kubectl('exec', '-it', podname, *cmd)
 
 
 @lain.command()

@@ -21,6 +21,7 @@ from urllib.parse import urljoin
 import click
 import requests
 import yaml
+from humanfriendly import parse_size
 from jinja2 import Environment, FileSystemLoader
 
 # safe to delete when release is in this state
@@ -149,6 +150,38 @@ def tell_ingress_urls():
     externalIngresses = helm_values.get('externalIngresses') or []
     part2 = [f'http://{i["host"]}' for i in externalIngresses]
     return part1 + part2
+
+
+def pick_pod(deploy_name=None):
+    ctx = context()
+    appname = ctx.obj['appname']
+    cmd = ['get', 'pod', '-o=jsonpath={..metadata.name}']
+    if deploy_name:
+        cmd.extend(['-l', f'app.kubernetes.io/instance={appname}-{deploy_name}'])
+    else:
+        cmd.extend(['-l', f'app.kubernetes.io/name={appname}'])
+
+    res = kubectl(*cmd, capture_output=True)
+    podnames = ensure_str(res.stdout).split()
+    try:
+        return podnames[-1]
+    except IndexError:
+        return
+
+
+def tell_best_deploy():
+    """deployment name with the most memory"""
+    ctx = context()
+    deploys = ctx.obj['values']['deployments']
+    chosen = list(deploys.keys())[0]
+    for name, deploy in deploys.items():
+        left = deploys[chosen]
+        left_memory = parse_size(left.get('memory') or '1Gi')
+        right_memory = parse_size(deploy.get('memory') or '1Gi')
+        if right_memory > left_memory:
+            chosen = name
+
+    return chosen
 
 
 deploy_toast_str = '''Your pods have all been created, you can see them using:
