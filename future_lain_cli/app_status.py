@@ -22,12 +22,12 @@ def test_url(url):
     try:
         res = requests.get(url, timeout=1)
     except Exception as e:
-        return str(e)
+        return e
     return res
 
 
 ingress_text_str = '''{%- for res in results %}
-{{ res.request.url }}   {{ res.status_code }}   {{ res.text | brief }}
+{{ res.url }}   {{ res.status }}   {{ res.text | brief }}
 {%- endfor %}
 '''
 ingress_text_template = template_env.from_string(ingress_text_str)
@@ -48,7 +48,24 @@ def ingress_text():
         for url in urls:
             rl.append(e.submit(test_url, url))
 
-    render_ctx = {'results': [future.result() for future in rl]}
+    def tidy_report(re):
+        report = {'url': re.request.url}
+        if isinstance(re, requests.Response):
+            report.update({
+                'status': re.status_code,
+                'text': re.text,
+            })
+        elif isinstance(re, requests.exceptions.RequestException):
+            report.update({
+                'status': re.__class__.__name__,
+                'text': str(re),
+            })
+        else:
+            raise ValueError(f'never seen this request result: {re}')
+        return report
+
+    results = [tidy_report(future.result()) for future in rl]
+    render_ctx = {'results': results}
     res = ingress_text_template.render(**render_ctx)
     return res
 
