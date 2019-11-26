@@ -486,7 +486,7 @@ def helm(*args, **kwargs):
     return completed
 
 
-def kubectl(*args, exit=None, **kwargs):
+def kubectl(*args, exit=None, timeout=2, **kwargs):
     try:
         version_res = subprocess_run(['kubectl', 'version', '--short', '--client=true'], capture_output=True)
         version = version_res.stdout.decode('utf-8').strip().split()[-1]
@@ -500,7 +500,7 @@ def kubectl(*args, exit=None, **kwargs):
         return kubectl(*args, exit=exit, **kwargs)
     env = os.environ
     env['PATH'] = f'{KUBECTL_BIN}:{env["PATH"]}'
-    cmd = ['kubectl', '--request-timeout=2', *args]
+    cmd = ['kubectl', f'--request-timeout={timeout}', *args]
     excall(cmd)
     completed = subprocess_run(cmd, env=env, **kwargs)
     if exit:

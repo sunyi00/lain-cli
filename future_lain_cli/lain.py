@@ -30,7 +30,7 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
 @click.pass_context
 def lain(ctx, silent):
     tell_cluster()
-    ctx.obj['silent'] = True
+    ctx.obj['silent'] = silent
     try:
         populate_helm_context(ctx.obj)
     except FileNotFoundError:
@@ -101,14 +101,40 @@ def status(ctx):
 
 
 @lain.command()
+@click.argument('deploy', nargs=-1)
+@click.option('--tail', help='lines of recent log file to display, defaults to 50 if no deploy is specified, otherwise show full log')
+@click.pass_context
+def logs(ctx, deploy, tail):
+    """tail app log:
+        lain log
+        lain log web
+    """
+    ensure_helm_initiated()
+    appname = ctx.obj['appname']
+    deploy_names = set(ctx.obj['values']['deployments'])
+    tail = 50
+    if deploy:
+        tail = -1
+        deploy = deploy[-1]
+        if deploy not in deploy_names:
+            error(f'deploy {deploy} not found, choose from {deploy_names}', exit=1)
+
+        selector = f'app.kubernetes.io/instance={appname}-{deploy}'
+    else:
+        selector = f'app.kubernetes.io/name={appname}'
+
+    kubectl('logs', '-f', f'--tail={tail}', '-l', selector, timeout=0)
+
+
+@lain.command()
 @click.argument('deploy_and_command', nargs=-1)
 @click.pass_context
 def x(ctx, deploy_and_command):
     """this command helps you with kubectl exec, insanely easy to use:
         lain x
         lain x web
-        lain x web-dev bash
-        lain x web-dev bash -c "ls | grep foo"
+        lain x worker bash
+        lain x web bash -c "ls | grep foo"
         lain x bash -c "ls | grep foo"
     """
     ensure_helm_initiated()
