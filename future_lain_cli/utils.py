@@ -425,7 +425,7 @@ def legacy_lain(*args, exit=None, fake_lain_yaml=True, **kwargs):
     return res
 
 
-def ensure_initiated(chart=False, secret=False):
+def ensure_resource_initiated(chart=False, secret=False):
     ctx = context()
     if chart:
         if not isdir(CHART_DIR_NAME):
@@ -653,6 +653,15 @@ def populate_helm_context(obj):
 
     # collect ingress urls
     obj['urls'] = tell_ingress_urls()
+    # set this flag to let us know the user is actually running lain in a lain4
+    # initialized app
+    obj['helm'] = True
+
+
+def ensure_helm_initiated():
+    ctx = context()
+    if not ctx.obj.get('helm'):
+        error('not in a lain4 app repo, nothing to do', exit=1)
 
 
 def get_app_status(appname):

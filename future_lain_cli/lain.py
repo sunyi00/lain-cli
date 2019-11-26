@@ -14,7 +14,7 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
                                    Registry, apply_secret, deploy_toast,
                                    dump_secret, echo, edit_file, ensure_absent,
-                                   ensure_initiated, error, example_lain_yaml,
+                                   ensure_resource_initiated, ensure_helm_initiated, error, example_lain_yaml,
                                    find, get_app_status, goodjob, helm,
                                    kubectl, legacy_lain, pick_pod,
                                    populate_helm_context,
@@ -96,11 +96,7 @@ def status(ctx):
     """view app status"""
     # we don't want stderr outputs to mess with our full screen application
     ctx.obj['silent'] = True
-    try:
-        populate_helm_context(ctx.obj)
-    except FileNotFoundError:
-        error('not in a lain4 app repo, nothing to do', exit=1)
-
+    ensure_helm_initiated()
     display_app_status()
 
 
@@ -115,6 +111,7 @@ def x(ctx, deploy_and_command):
         lain x web-dev bash -c "ls | grep foo"
         lain x bash -c "ls | grep foo"
     """
+    ensure_helm_initiated()
     deploy_names = set(ctx.obj['values']['deployments'])
     if deploy_and_command:
         deploy, *cmd = deploy_and_command
@@ -170,6 +167,7 @@ def use(ctx, cluster):
 @click.pass_context
 def update_image(ctx, deployments, deduce):
     """update, and only update image for some deploy"""
+    ensure_helm_initiated()
     choices = set(ctx.obj['values']['deployments'].keys())
     if not deployments:
         error(f'specify at least one deployment, choose from: {choices}', exit=1)
@@ -216,11 +214,12 @@ def deploy(ctx, whatever, pairs):
 
         legacy_lain('deploy', *whatever, exit=True)
 
+    ensure_helm_initiated()
     # no big deal, just using this line to initialized env first
     # otherwise this deploy may fail because envFrom is referencing a
     # non-existent secret
     tell_secret(ctx.obj['env_name'])
-    ensure_initiated(chart=True, secret=True)
+    ensure_resource_initiated(chart=True, secret=True)
     appname = ctx.obj['appname']
     status = get_app_status(appname)
     if status and status['info']['status'] in HELM_WEIRD_STATE:
@@ -311,6 +310,7 @@ def env(ctx):
     using envFrom in Kubernetes manifests.
     this cli merely exposes some handy editing functionalities.
     """
+    ensure_helm_initiated()
 
 
 @env.command()
@@ -360,6 +360,7 @@ def secret():
     backward compatibilities, the cli arguments are very weird, we'll remove
     them once lain2/3 became obsolete
     """
+    ensure_helm_initiated()
 
 
 @secret.command()
