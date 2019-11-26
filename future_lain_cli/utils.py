@@ -8,6 +8,7 @@ import shutil
 import stat
 import subprocess
 import sys
+from collections.abc import Mapping
 from inspect import cleandoc
 from os import getcwd as cwd
 from os import readlink, remove
@@ -20,7 +21,7 @@ from urllib.parse import urljoin
 import click
 import requests
 import yaml
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader
 
 # safe to delete when release is in this state
 HELM_WEIRD_STATE = {'failed', 'pending-install'}
@@ -53,6 +54,25 @@ CLUSTERS = set(FUTURE_CLUSTERS) | LEGACY_CLUSTERS
 LEGACY_IMAGE_PATTERN = re.compile(r'^release-\d+-[^-]+$')
 
 
+def recursive_update(d, u):
+    '''
+    >>> recursive_update({'foo': {'spam': 'egg'}}, {'foo': {'bar': 'egg'}})
+    {'foo': {'spam': 'egg', 'bar': 'egg'}}
+    >>> recursive_update({'foo': 'xxx'}, {'foo': {'bar': 'egg'}})
+    {'foo': {'bar': 'egg'}}
+    '''
+    if not u:
+        return d
+    for k, v in u.items():
+        if type(d.get(k)) is not type(v):
+            d[k] = v
+        elif isinstance(v, Mapping):
+            d[k] = recursive_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+
 def quote(s):
     return shlex.quote(s)
 
@@ -64,6 +84,17 @@ def context():
 def excall(s, env=None):
     """lain cli often calls other cli, might wanna notify the user what's being
     run"""
+    # this try-except exists because when running tests, this function will be
+    # invoked without a active click context
+    # personally i hate adding extra handling in business code just to take
+    # care of testing, forgive me because there's gonna be much more work
+    # otherwise
+    try:
+        ctx = context()
+        if ctx.obj.get('silent'):
+            return
+    except RuntimeError:
+        pass
     if env:  # reserved for debugging
         env_clause = ' '.join(f'{k}={v}' for k, v in env.items())
         s = f'{env_clause} {s}'
@@ -109,6 +140,17 @@ def error(s, exit=None):
     return echo(s, fg='red', exit=exit, err=True)
 
 
+def tell_ingress_urls():
+    ctx = context()
+    cluster = ctx.obj['cluster']
+    helm_values = ctx.obj['values']
+    ingresses = helm_values.get('ingresses') or []
+    part1 = [f'http://{i["host"]}.{cluster}.ein.plus' for i in ingresses]
+    externalIngresses = helm_values.get('externalIngresses') or []
+    part2 = [f'http://{i["host"]}' for i in externalIngresses]
+    return part1 + part2
+
+
 deploy_toast_str = '''Your pods have all been created, you can see them using:
     kubectl get po -l app.kubernetes.io/name={{ appname }}
 to tail logs:
@@ -127,9 +169,11 @@ To rollback to a previous version:
     helm history {{ appname }}
     helm rollback {{ appname }} [REVISION]
 
-{%- if 'ingresses' in values and values.ingresses %}
+{%- if 'urls' in values and values.urls %}
 To access your app through internal domain:
-    http://{{ appname }}.{{ cluster }}.ein.plus
+    {%- for url in values.urls %}
+    {{ url }}
+    {%- endfor %}
 {% endif %}
 {%- if 'cronjobs' in values and values.cronjobs %}
 To test your cronjob:
@@ -432,6 +476,12 @@ def kubectl(*args, exit=None, **kwargs):
     return completed
 
 
+def print_app_status():
+    ctx = context()
+    appname = ctx.obj['appname']
+    kubectl('get', 'po', '-l', f'app.kubernetes.io/name={appname}')
+
+
 def tell_cluster():
     link = expanduser('~/.kube/config')
     try:
@@ -534,6 +584,18 @@ def yadu(dic, f=None):
         raise ValueError(f'f must be a file or path, got {f}')
 
 
+def brief(s):
+    """
+    >>> a = 'I\nAM\nBATMAN'
+    >>> brief(a)
+    'I\nAM\nBATMAN'
+    """
+    single_line = s.replace('\n', '\\n')
+    if len(single_line) > 88:
+        return single_line[:88] + '...'
+    return single_line
+
+
 def populate_helm_context(obj):
     """gather basic information about the current app.
     If cluster info is provided, will try to fetch app status from Kubernetes"""
@@ -551,6 +613,13 @@ def populate_helm_context(obj):
         raise
     except KeyError:
         error(f'{values_yaml} doesn\'t look like a valid lain4 yaml, if you want to use lain4 for this app, use `lain inif -f`', exit=1)
+
+    cluster_values_file = tell_cluster_values_file()
+    if cluster_values_file:
+        recursive_update(helm_values, yalo(open(cluster_values_file)))
+
+    # collect ingress urls
+    obj['urls'] = tell_ingress_urls()
 
 
 def get_app_status(appname):
@@ -665,6 +734,7 @@ test:
 template_env.filters['basename'] = basename
 template_env.filters['quote'] = quote
 template_env.filters['to_yaml'] = yadu
+template_env.filters['brief'] = brief
 
 
 class literal(str):

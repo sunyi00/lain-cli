@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import os
 import shutil
 from io import StringIO
@@ -8,6 +9,7 @@ from os.path import basename, dirname, expanduser, isfile, join
 
 import click
 
+from future_lain_cli.app_status import display_app_status
 from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
                                    Registry, apply_secret, deploy_toast,
@@ -23,9 +25,11 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
 
 
 @click.group()
+@click.option('--silent', '-s', is_flag=True, help='log as little text as possible')
 @click.pass_context
-def lain(ctx):
+def lain(ctx, silent):
     tell_cluster()
+    ctx.obj['silent'] = True
     try:
         populate_helm_context(ctx.obj)
     except FileNotFoundError:
@@ -83,6 +87,20 @@ def init(ctx, appname, lain_yaml, force):
     * If this app uses `[appname].lain` services, ack and substitute them with [appname]-web, provided they have already been deployed on lain4
     '''
     goodjob(toast)
+
+
+@lain.command()
+@click.pass_context
+def status(ctx):
+    """view app status"""
+    # we don't want stderr outputs to mess with our full screen application
+    ctx.obj['silent'] = True
+    try:
+        populate_helm_context(ctx.obj)
+    except FileNotFoundError:
+        error('not in a lain4 app repo, nothing to do', exit=1)
+
+    display_app_status()
 
 
 @lain.command()

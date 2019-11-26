@@ -160,7 +160,7 @@ ingresses:
 # externalIngresses 用来声明公网域名, 但是这个字段建议你写到 {{ chart_name }}/values-[CLUSTER].yaml 里, 毕竟这属于集群特定的配置
 # externalIngresses:
 #   # 这里需要写成完整的域名, 因为每个集群的公网域名都不一样, 模板不好帮你做补全
-#   - host: {{ appname }}
+#   - host: [DOMAIN]
 #     # 你想把这个域名的流量打到哪个 deploy 上, 就在这里写哪个 deploy 的名称
 #     deployName: web
 #     paths:
