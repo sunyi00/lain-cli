@@ -66,11 +66,16 @@ spec:
             {{- toYaml $deployment.resources | nindent 12 }}
           volumeMounts:
             {{- range $volumeMount := $.Values.volumeMounts  }}
-            - name: secret
+            - name: {{ default "secret" $volumeMount.name }}
               mountPath: {{ $volumeMount.mountPath }}
+              {{- if hasKey $volumeMount "subPath" }}
               subPath: {{ $volumeMount.subPath }}
+              {{- end }}
             {{- end }}
       volumes:
+        {{- with $.Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         - name: secret
           secret:
             secretName: {{ $.Values.appname }}-secret

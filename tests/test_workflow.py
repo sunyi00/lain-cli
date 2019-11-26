@@ -63,6 +63,12 @@ def test_workflow(dummy, registry):
             'web-dev': {
                 'replicaCount': overrideReplicaCount,
                 'imageTag': overrideImageTag,
+                'readinessProbe': {
+                    'httpGet': {'path': '/', 'port': 5000},
+                    'initialDelaySeconds': 2,
+                    'periodSeconds': 1,
+                    'failureThreshold': 1,
+                },
             },
         },
         # this is just used to ensure helm template rendering

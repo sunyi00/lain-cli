@@ -66,12 +66,14 @@ spec:
                 {{- toYaml $cronjob.resources | nindent 16 }}
               volumeMounts:
                 {{- range $volumeMount := $.Values.volumeMounts  }}
-                - name: config
+                - name: {{ default "secret" $volumeMount.name }}
                   mountPath: {{ $volumeMount.mountPath }}
+                  {{- if hasKey $volumeMount "subPath" }}
                   subPath: {{ $volumeMount.subPath }}
+                  {{- end }}
                 {{- end }}
           volumes:
-            - name: config
+            - name: secret
               secret:
                 secretName: {{ $.Values.appname }}-secret
 {{- end }}

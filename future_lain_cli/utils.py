@@ -286,9 +286,11 @@ def dump_secret(secret_name, init='env'):
     return f
 
 
-def tell_cluster_info():
-    ctx = context()
-    cluster = ctx.obj['cluster']
+def tell_cluster_info(cluster=None):
+    if not cluster:
+        ctx = context()
+        cluster = ctx.obj['cluster']
+
     return FUTURE_CLUSTERS[cluster]
 
 
@@ -435,7 +437,11 @@ def ensure_resource_initiated(chart=False, secret=False):
     if secret:
         # if volumeMounts are used in values.yaml but secret doesn't exists,
         # print error and then exit
-        subPaths = [m['subPath'] for m in ctx.obj['values'].get('volumeMounts', {})]
+        subPaths = [
+            m['subPath']
+            for m in ctx.obj['values'].get('volumeMounts', {})
+            if m.get('subPath')
+        ]
         if subPaths:
             cluster = ctx.obj['cluster']
             res = kubectl('-n', 'default', 'get', 'secret', ctx.obj['secret_name'], capture_output=True)

@@ -105,7 +105,8 @@ def status(ctx):
 @click.option('--tail', help='lines of recent log file to display, defaults to 50 if no deploy is specified, otherwise show full log')
 @click.pass_context
 def logs(ctx, deploy, tail):
-    """tail app log:
+    """\b
+    tail app log:
         lain log
         lain log web
     """
@@ -130,7 +131,8 @@ def logs(ctx, deploy, tail):
 @click.argument('deploy_and_command', nargs=-1)
 @click.pass_context
 def x(ctx, deploy_and_command):
-    """this command helps you with kubectl exec, insanely easy to use:
+    """\b
+    this command helps you with kubectl exec, insanely easy to use:
         lain x
         lain x web
         lain x worker bash
@@ -170,8 +172,11 @@ def x(ctx, deploy_and_command):
 @click.argument('cluster', type=click.Choice(FUTURE_CLUSTERS))
 @click.pass_context
 def use(ctx, cluster):
-    """link kubeconfig of specified CLUSTER to ~/.kube/config, so that you
-    don\'t have to type --kubeconfig when using kubectl, or helm"""
+    """\b
+    point to specified cluster.
+
+    this command will link kubeconfig of specified CLUSTER to ~/.kube/config,
+    so that you don\'t have to type --kubeconfig when using kubectl, or helm"""
     kubeconfig_file = f'~/.kube/kubeconfig-{cluster}'
     src = expanduser(kubeconfig_file)
     if not isfile(src):
@@ -180,10 +185,10 @@ def use(ctx, cluster):
     dest = expanduser('~/.kube/config')
     ensure_absent(dest)
     os.symlink(src, dest)
-    kubectl('config', 'set-context', '--current', '--namespace=default')
-    cluster_info = tell_cluster_info()
+    kubectl('config', 'set-context', '--current', '--namespace=default', capture_output=True)
+    cluster_info = tell_cluster_info(cluster)
     domain = cluster_info['legacy_lain_domain']
-    legacy_lain('config', 'save', cluster, 'domain', domain)
+    legacy_lain('config', 'save', cluster, 'domain', domain, capture_output=True)
     goodjob(f'You did good, next time you use lain4 / helm / kubectl, it\'ll point to cluster {cluster}')
 
 

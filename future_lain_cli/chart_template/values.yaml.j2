@@ -15,7 +15,7 @@ imageTag: overridden-during-deploy
 # lain env add FOO=BAR
 # lain env edit
 
-# 这一块配置负责把配置文件挂载到容器里, subPath 是需要挂载的文件名称, 而 mountPath 就是你希望挂载到容器里的路径啦
+# 这一块负责把配置文件挂载到容器里, subPath 是需要挂载的文件名称, 而 mountPath 就是你希望挂载到容器里的路径啦
 # 至于要怎样让 Kubernetes 知道你需要挂载的文件, 这个建议用 lain secret 命令:
 # lain use [CLUSTER]
 # lain secret add secret.json
@@ -30,6 +30,18 @@ volumeMounts:
     subPath: {{ fname }}
   {%- endfor %}
 {%- endif %}
+
+# 如果你的应用要挂载本地目录(基本都是 jfs, 不建议你真的挂载本地目录, 否则磁盘写爆了就不开心了)
+# 写法就稍微复杂写了, 需要先在 volumes 里声明 hostPath, 然后在 volumeMounts 里加一个挂载
+# volumes:
+#   - name: jfs-data
+#     hostPath:
+#       path: "/jfs/holybell/gender-detect"
+#       type: Directory
+#
+# volumeMounts:
+#   - name: jfs-data
+#     mountPath: /lain/app/data
 
 # deployment 是一个 Kubernetes 概念, 是 Kubernetes 管理容器最为朴素的一种方式
 # 只需要声明你的应用需要什么资源, 以什么命令启动, 需要暴露什么端口, 开发过 web 应用的人对下边的参数都会非常熟悉
