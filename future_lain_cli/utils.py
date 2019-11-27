@@ -324,6 +324,46 @@ def tell_secret(secret_name, init='env'):
     return dic
 
 
+def kubectl_edit(f):
+    edit_file(f)
+    try:
+        secret_dic = yalo(f)
+    except yaml.error.YAMLError as e:
+        name = preserve_tempfile(f)
+        err = f'''not a valid yaml after edit:
+
+{e}
+
+you should fix {name} and then:
+kubectl apply -f {name}
+rm {name}
+        '''
+        error(err, exit=1)
+
+    res = apply_secret(secret_dic)
+    if res.returncode:
+        name = preserve_tempfile(f)
+        err = f'''
+        error during kubectl apply (read the above error).
+        fix this file: {name}
+        and then:
+            kubectl apply -f {name}
+            rm {name}
+        '''
+        error(err, exit=1)
+
+
+def preserve_tempfile(f):
+    name = f.name
+    f.seek(0)
+    content = f.read()
+    f.close()
+    with open(name, 'wb') as nf:
+        nf.write(content)
+
+    return name
+
+
 def apply_secret(dic):
     """do a b64encode on all data fields, then kubectl apply, easy job"""
     for fname, s in dic['data'].items():
@@ -332,7 +372,7 @@ def apply_secret(dic):
     f = NamedTemporaryFile(suffix='.yaml')
     yadu(dic, f)
     f.seek(0)
-    kubectl('apply', '-f', f.name, exit=True)
+    return kubectl('apply', '-f', f.name)
 
 
 def tell_cluster_values_file():

@@ -13,16 +13,18 @@ from future_lain_cli.app_status import display_app_status
 from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
                                    Registry, apply_secret, deploy_toast,
-                                   dump_secret, echo, edit_file, ensure_absent,
-                                   ensure_resource_initiated, ensure_helm_initiated, error, example_lain_yaml,
-                                   find, get_app_status, goodjob, helm,
-                                   kubectl, legacy_lain, pick_pod,
+                                   dump_secret, echo, ensure_absent,
+                                   ensure_helm_initiated,
+                                   ensure_resource_initiated, error,
+                                   example_lain_yaml, find, get_app_status,
+                                   goodjob, helm, kubectl, kubectl_edit,
+                                   legacy_lain, pick_pod,
                                    populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
                                    tell_best_deploy, tell_cluster,
                                    tell_cluster_info, tell_cluster_values_file,
                                    tell_helm_set_clause, tell_image_tag,
-                                   tell_secret, template_env, warn, yadu, yalo)
+                                   tell_secret, template_env, warn, yadu)
 
 
 @click.group()
@@ -376,9 +378,7 @@ def show(ctx):
 def edit(ctx):
     """env management."""
     f = dump_secret(ctx.obj['env_name'], init='env')
-    edit_file(f)
-    secret_dic = yalo(f)
-    apply_secret(secret_dic)
+    kubectl_edit(f)
 
 
 @lain.group()
@@ -449,9 +449,7 @@ def show(ctx, whatever):
 def edit(ctx):
     """secret management. For lain4 only."""
     f = dump_secret(ctx.obj['secret_name'], init='secret')
-    edit_file(f)
-    secret_dic = yalo(f)
-    apply_secret(secret_dic)
+    kubectl_edit(f)
 
 
 def main():

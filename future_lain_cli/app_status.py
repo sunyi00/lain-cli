@@ -11,7 +11,20 @@ from prompt_toolkit.layout.layout import Layout
 from future_lain_cli.utils import context, ensure_str, kubectl, template_env
 
 
-def kube_text():
+def events_text():
+    """display events for pending pods"""
+    ctx = context()
+    appname = ctx.obj['appname']
+    res = kubectl('get', 'po', '-o=jsonpath={..metadata.name}', '--field-selector=status.phase==Pending', '-l', f'app.kubernetes.io/name={appname}', capture_output=True)
+    pod_names = ensure_str(res.stdout).split()
+    if pod_names:
+        pod_name = pod_names[0]
+        events = kubectl('get', 'event', '--field-selector', f'involvedObject.name={pod_name}', capture_output=True)
+        return ensure_str(events.stdout)
+    return 'everything under control'
+
+
+def pod_text():
     ctx = context()
     appname = ctx.obj['appname']
     res = kubectl('get', 'po', '-o=wide', '--field-selector=status.phase!=Succeeded', '-l', f'app.kubernetes.io/name={appname}', capture_output=True)
@@ -71,7 +84,7 @@ def ingress_text():
 
 
 # prompt_toolkit window without cursor"""
-Win = partial(Window, always_hide_cursor=True)
+Win = partial(Window, always_hide_cursor=True, wrap_lines=True)
 Title = partial(FormattedTextControl, style='fg:GreenYellow')
 
 
@@ -79,20 +92,31 @@ def build(refresh_interval=2):
     ctx = context()
     appname = ctx.obj['appname']
     # building kube container
-    kube_text_control = FormattedTextControl(text=kube_text)
-    kube_window = Win(content=kube_text_control)
-    kube_container = HSplit([
+    pod_text_control = FormattedTextControl(text=pod_text)
+    pod_win = Win(content=pod_text_control)
+    pod_container = HSplit([
         Win(
             height=1,
             content=Title(f'kubectl get po -o=wide --field-selector=status.phase!=Succeeded -l app.kubernetes.io/name={appname}'),
         ),
-        kube_window,
+        pod_win,
     ])
-    parts = [kube_container]
+    # building events container
+    events_text_control = FormattedTextControl(text=events_text)
+    events_window = Win(content=events_text_control)
+    events_container = HSplit([
+        Win(
+            height=1,
+            content=Title('events for pending pods'),
+        ),
+        events_window,
+    ])
+    parts = [pod_container, events_container]
     # building ingress container
-    if ctx.obj['urls']:
+    urls = ctx.obj['urls']
+    if urls:
         ingress_text_control = FormattedTextControl(text=ingress_text)
-        ingress_window = Win(content=ingress_text_control, always_hide_cursor=True)
+        ingress_window = Win(content=ingress_text_control, height=len(urls) + 3, always_hide_cursor=True)
         ingress_container = HSplit([
             Win(height=1, content=Title(f'url requests')),
             ingress_window,
