@@ -8,18 +8,19 @@ from prompt_toolkit.layout.containers import HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 
-from future_lain_cli.utils import context, ensure_str, kubectl, template_env
+from future_lain_cli.utils import (context, ensure_str, kubectl, pick_pod,
+                                   template_env)
 
 
 def events_text():
     """display events for pending pods"""
-    ctx = context()
-    appname = ctx.obj['appname']
-    res = kubectl('get', 'po', '-o=jsonpath={..metadata.name}', '--field-selector=status.phase==Pending', '-l', f'app.kubernetes.io/name={appname}', capture_output=True)
-    pod_names = ensure_str(res.stdout).split()
-    if pod_names:
-        pod_name = pod_names[0]
+    pod_name = pick_pod(phase='Pending')
+    if pod_name:
         events = kubectl('get', 'event', '--field-selector', f'involvedObject.name={pod_name}', capture_output=True)
+        return ensure_str(events.stdout)
+    pod_name = pick_pod(phase='Failed')
+    if pod_name:
+        events = kubectl('get', 'pod', f'{pod_name}', '-ojsonpath={.status.containerStatuses..message}', capture_output=True)
         return ensure_str(events.stdout)
     return 'everything under control'
 
@@ -107,7 +108,7 @@ def build(refresh_interval=2):
     events_container = HSplit([
         Win(
             height=1,
-            content=Title('events for pending pods'),
+            content=Title('events and messages for pods in weird states'),
         ),
         events_window,
     ])

@@ -152,7 +152,7 @@ def tell_ingress_urls():
     return part1 + part2
 
 
-def pick_pod(deploy_name=None):
+def pick_pod(deploy_name=None, phase=None):
     ctx = context()
     appname = ctx.obj['appname']
     cmd = ['get', 'pod', '-o=jsonpath={..metadata.name}']
@@ -160,6 +160,9 @@ def pick_pod(deploy_name=None):
         cmd.extend(['-l', f'app.kubernetes.io/instance={appname}-{deploy_name}'])
     else:
         cmd.extend(['-l', f'app.kubernetes.io/name={appname}'])
+
+    if phase:
+        cmd.extend([f'--field-selector=status.phase=={phase}'])
 
     res = kubectl(*cmd, capture_output=True)
     podnames = ensure_str(res.stdout).split()
