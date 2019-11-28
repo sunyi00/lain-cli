@@ -294,7 +294,7 @@ def build(ctx):
     legacy_lain functionality, if build clause exists in chart/values.yaml,
     then uses values.yaml as lain.yaml. otherwise this command behaves just
     like legacy_lain"""
-    if 'build' not in ctx.obj['values']:
+    if 'build' not in ctx.obj.get('values', {}):
         fake_lain_yaml = False
     else:
         fake_lain_yaml = True
