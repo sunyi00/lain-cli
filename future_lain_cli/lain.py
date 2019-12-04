@@ -268,9 +268,8 @@ def deploy(ctx, whatever, pairs):
 
     headsup = f'''
     While being deployed, you can use kubectl to check the status of you app:
-        kubectl get po -l app.kubernetes.io/name={appname}
-        kubectl describe po [POD_NAME]
-        kubectl logs -f [POD_NAME]
+        lain status
+        lain logs
     '''
     echo(headsup, err=True)
     set_clause = tell_helm_set_clause(pairs)

@@ -189,10 +189,17 @@ def tell_best_deploy():
 
 deploy_toast_str = '''Your pods have all been created, you can see them using:
     kubectl get po -l app.kubernetes.io/name={{ appname }}
+{%- if urls %}
+To access your app through internal domain:
+    {%- for url in urls %}
+    {{ url }}
+    {%- endfor %}
+{% endif %}
 to tail logs:
     {%- for deploy_name in values.deployments %}
+    lain logs {{ deploy_name }}
     kubectl logs -f --tail 10 -l app.kubernetes.io/instance={{ appname }}-{{ deploy_name }}
-    {%- if loop.index >= 2 %}
+    {%- if loop.index >= 1 %}
     ...
     {% break %}
     {%- endif %}
@@ -205,12 +212,6 @@ To rollback to a previous version:
     helm history {{ appname }}
     helm rollback {{ appname }} [REVISION]
 
-{%- if 'urls' in values and values.urls %}
-To access your app through internal domain:
-    {%- for url in values.urls %}
-    {{ url }}
-    {%- endfor %}
-{% endif %}
 {%- if 'cronjobs' in values and values.cronjobs %}
 To test your cronjob:
     {%- for job_name in values.cronjobs.keys() %}
