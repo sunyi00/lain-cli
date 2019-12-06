@@ -78,24 +78,20 @@ def quote(s):
     return shlex.quote(s)
 
 
-def context():
-    return click.get_current_context()
+def context(silent=False):
+    return click.get_current_context(silent=silent)
 
 
 def excall(s, env=None):
     """lain cli often calls other cli, might wanna notify the user what's being
     run"""
-    # this try-except exists because when running tests, this function will be
-    # invoked without a active click context
-    # personally i hate adding extra handling in business code just to take
-    # care of testing, forgive me because there's gonna be much more work
+    # when running tests, this function will be invoked without a active click
+    # context personally i hate adding extra handling in business code just to
+    # take care of testing, forgive me because there's gonna be much more work
     # otherwise
-    try:
-        ctx = context()
-        if ctx.obj.get('silent'):
-            return
-    except RuntimeError:
-        pass
+    ctx = context(silent=True)
+    if ctx and ctx.obj.get('silent'):
+        return
     if env:  # reserved for debugging
         env_clause = ' '.join(f'{k}={v}' for k, v in env.items())
         s = f'{env_clause} {s}'
@@ -110,7 +106,7 @@ def ensure_str(s):
     try:
         return s.decode('utf-8')
     except:
-        return s
+        return str(s)
 
 
 def echo(s, fg=None, exit=None, err=False):
@@ -132,6 +128,16 @@ def warn(s, exit=None):
         exit = 1
 
     return echo(s, fg='magenta', exit=exit, err=True)
+
+
+def debug(s, exit=None):
+    ctx = context(silent=True)
+    if ctx and not ctx.obj.get('verbose'):
+        return
+    if exit:
+        exit = 1
+
+    return echo(s, fg='black', exit=exit, err=True)
 
 
 def error(s, exit=None):
@@ -332,28 +338,20 @@ def kubectl_edit(f):
     edit_file(f)
     try:
         secret_dic = yalo(f)
-    except yaml.error.YAMLError as e:
+        res = kubectl_apply(secret_dic)
+    except (yaml.error.YAMLError, ValueError) as e:
         name = preserve_tempfile(f)
-        err = f'''not a valid yaml after edit:
+        err = f'''not a valid kubernetes secret file after edit:
+            {e}
 
-{e}
-
-you should fix {name} and then:
-kubectl apply -f {name}
-rm {name}
-        '''
+            don't worry, your work has been saved to: {name}'''
         error(err, exit=1)
 
-    res = apply_secret(secret_dic)
     if res.returncode:
         name = preserve_tempfile(f)
         err = f'''
         error during kubectl apply (read the above error).
-        fix this file: {name}
-        and then:
-            kubectl apply -f {name}
-            rm {name}
-        '''
+        don't worry, your work has been saved to: {name}'''
         error(err, exit=1)
 
 
@@ -368,11 +366,17 @@ def preserve_tempfile(f):
     return name
 
 
-def apply_secret(dic):
+def kubectl_apply(dic):
     """do a b64encode on all data fields, then kubectl apply, easy job"""
-    for fname, s in dic['data'].items():
-        dic['data'][fname] = base64.b64encode(s.encode('utf-8')).decode('utf-8')
+    if dic['kind'] == 'Secret':
+        for fname, s in dic['data'].items():
+            try:
+                dic['data'][fname] = base64.b64encode(s.encode('utf-8')).decode('utf-8')
+            except AttributeError:
+                raise ValueError(f'kubernetes secret data should be string, got {fname}: {s}')
 
+    debug('dumping kubernetes manifest:')
+    debug(dic)
     f = NamedTemporaryFile(suffix='.yaml')
     yadu(dic, f)
     f.seek(0)
@@ -595,7 +599,13 @@ def download_binary(thing, dest):
     assert thing in {'kubectl', 'helm'}
     platform = tell_platform()
     url = f'{CDN}/lain4/{thing}-{platform}'
-    click.echo(f'Don\'t mind me, just gonna download {url} into {dest}. If you wanna put them in other places, export LAIN_EXBIN_PREFIX and try this again', err=True)
+    headsup = f'''
+    Don\'t mind me, just gonna download {url} into {dest}.
+    If you don't like this, you can either:
+        export LAIN_EXBIN_PREFIX and try this again
+        install kubectl and helm yourself (for example, Homebrew)
+    '''
+    click.echo(headsup, err=True)
     try:
         with requests.get(url, stream=True) as res:
             with open(dest, 'wb') as f:

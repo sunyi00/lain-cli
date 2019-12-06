@@ -9,16 +9,16 @@ from os.path import basename, dirname, expanduser, isfile, join
 
 import click
 
+from future_lain_cli import __version__
 from future_lain_cli.app_status import display_app_status
 from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
-                                   Registry, apply_secret, deploy_toast,
-                                   dump_secret, echo, ensure_absent,
-                                   ensure_helm_initiated,
+                                   Registry, deploy_toast, dump_secret, echo,
+                                   ensure_absent, ensure_helm_initiated,
                                    ensure_resource_initiated, error,
                                    example_lain_yaml, find, get_app_status,
-                                   goodjob, helm, kubectl, kubectl_edit,
-                                   legacy_lain, pick_pod,
+                                   goodjob, helm, kubectl, kubectl_apply,
+                                   kubectl_edit, legacy_lain, pick_pod,
                                    populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
                                    tell_best_deploy, tell_cluster,
@@ -29,10 +29,12 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
 
 @click.group()
 @click.option('--silent', '-s', is_flag=True, help='log as little text as possible')
+@click.option('--verbose', '-v', is_flag=True)
 @click.pass_context
-def lain(ctx, silent):
+def lain(ctx, silent, verbose):
     tell_cluster()
     ctx.obj['silent'] = silent
+    ctx.obj['verbose'] = verbose
     try:
         populate_helm_context(ctx.obj)
     except FileNotFoundError:
@@ -360,7 +362,7 @@ def add(ctx, pairs):
     for k, v in pairs:
         env_dic['data'][k] = v
 
-    apply_secret(env_dic)
+    kubectl_apply(env_dic)
     goodjob(f'env edited, you can use `lain env show` to view them', exit=True)
 
 
@@ -390,7 +392,6 @@ def secret():
     backward compatibilities, the cli arguments are very weird, we'll remove
     them once lain2/3 became obsolete
     """
-    ensure_helm_initiated()
 
 
 @secret.command()
@@ -413,12 +414,13 @@ def add(ctx, whatever, f):
     if len(whatever) > 1:
         legacy_lain('secret', 'add', '-f', f, *whatever, exit=True)
 
+    ensure_helm_initiated()
     secret_name = ctx.obj['secret_name']
     f = whatever[0]
     fname = basename(f)
     secret_dic = tell_secret(secret_name, init='secret')
     secret_dic['data'][fname] = open(f).read()
-    apply_secret(secret_dic)
+    kubectl_apply(secret_dic)
     goodjob(f'{f} has been added to secret/{secret_name}, now you should delete this file', exit=True)
 
 
@@ -437,8 +439,9 @@ def show(ctx, whatever):
     and mountpath has be defined in chart/values.yaml
     """
     if whatever:
-        legacy_lain('secret', 'show', *whatever, exit=True)
+        legacy_lain('secret', 'show', *whatever, exit=True, fake_lain_yaml=False)
 
+    ensure_helm_initiated()
     secret_dic = tell_secret(ctx.obj['secret_name'], init='secret')
     echo(yadu(secret_dic))
 
@@ -447,8 +450,38 @@ def show(ctx, whatever):
 @click.pass_context
 def edit(ctx):
     """secret management. For lain4 only."""
+    ensure_helm_initiated()
     f = dump_secret(ctx.obj['secret_name'], init='secret')
     kubectl_edit(f)
+
+
+@lain.command()
+def version():
+    echo(__version__)
+
+
+@lain.command()
+@click.argument('whatever', nargs=-1)
+@click.pass_context
+def test(ctx, whatever):
+    """legacy_lain test"""
+    legacy_lain('test', *whatever)
+
+
+@lain.command()
+@click.argument('whatever', nargs=-1)
+@click.pass_context
+def run(ctx, whatever):
+    """legacy_lain run"""
+    legacy_lain('run', *whatever)
+
+
+@lain.command()
+@click.argument('whatever', nargs=-1)
+@click.pass_context
+def stop(ctx, whatever):
+    """legacy_lain stop"""
+    legacy_lain('stop', *whatever)
 
 
 def main():
