@@ -658,7 +658,15 @@ def edit_file(f):
 
 def yalo(f):
     """tired of yaml bitching about unsafe loaders"""
+    # I've seen things you wouldn't believe
+    # tempfile buffer content could be different from the actual hard disk
+    # content
+    if hasattr(f, 'name'):
+        with open(f.name) as file_again:
+            f = file_again.read()
+
     if hasattr(f, 'read'):
+        f.seek(0)
         f = f.read()
 
     return yaml.load(f, Loader=yaml.FullLoader)
