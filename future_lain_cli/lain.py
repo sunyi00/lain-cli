@@ -289,6 +289,21 @@ def deploy(ctx, whatever, pairs):
 
 @lain.command()
 @click.pass_context
+def prepare(ctx):
+    """\b
+    legacy_lain functionality, if build clause exists in chart/values.yaml,
+    then uses values.yaml as lain.yaml. otherwise this command behaves just
+    like legacy_lain"""
+    if 'build' not in ctx.obj.get('values', {}):
+        fake_lain_yaml = False
+    else:
+        fake_lain_yaml = True
+
+    legacy_lain('prepare', fake_lain_yaml=fake_lain_yaml)
+
+
+@lain.command()
+@click.pass_context
 def build(ctx):
     """\b
     legacy_lain functionality, if build clause exists in chart/values.yaml,
