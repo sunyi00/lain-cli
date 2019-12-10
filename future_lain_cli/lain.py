@@ -15,16 +15,18 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
                                    Registry, deploy_toast, dump_secret, echo,
                                    ensure_absent, ensure_helm_initiated,
-                                   ensure_resource_initiated, ensure_str,
-                                   error, example_lain_yaml, find,
-                                   get_app_status, goodjob, helm, kubectl,
-                                   kubectl_apply, kubectl_edit, legacy_lain,
-                                   pick_pod, populate_helm_context,
+                                   ensure_resource_initiated, error,
+                                   example_lain_yaml, find, get_app_status,
+                                   goodjob, helm, init_done_toast,
+                                   is_values_file, kubectl, kubectl_apply,
+                                   kubectl_edit, legacy_lain, pick_pod,
+                                   populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
                                    tell_best_deploy, tell_cluster_info,
                                    tell_cluster_values_file,
                                    tell_helm_set_clause, tell_image_tag,
                                    tell_secret, template_env,
+                                   template_update_toast,
                                    too_much_logs_headsup, warn, yadu)
 
 
@@ -42,11 +44,12 @@ def lain(ctx, silent, verbose):
 
 
 @lain.command()
-@click.option('--appname', default=basename(cwd()), help='Name of the app, default to the lain.yaml appname. But if --lain-yaml isn\'t provided, the dirname of cwd will be used')
-@click.option('--lain-yaml', type=click.File(), default=lambda: StringIO(example_lain_yaml), help='Generate helm charts from the given lain.yaml, if not provided, an example chart will be generated')
-@click.option('--force', '-f', is_flag=True, help=f'Remove ./{CHART_DIR_NAME} and then regenerate')
+@click.option('--appname', default=basename(cwd()), help='name of the app, default to the lain.yaml appname. But if --lain-yaml isn\'t provided, the dirname of cwd will be used')
+@click.option('--lain-yaml', type=click.File(), default=lambda: StringIO(example_lain_yaml), help='generate helm charts from the given lain.yaml, if not provided, an example chart will be generated')
+@click.option('--force', '-f', is_flag=True, help=f'remove ./{CHART_DIR_NAME} and then regenerate')
+@click.option('--template-only', is_flag=True, help=f'only update templates, leave values alone')
 @click.pass_context
-def init(ctx, appname, lain_yaml, force):
+def init(ctx, appname, lain_yaml, force, template_only):
     """generate a helm chart for your app"""
     # just using this command to ensure kubectl is downloaded
     kubectl('version', '--client=true', capture_output=True)
@@ -60,12 +63,15 @@ def init(ctx, appname, lain_yaml, force):
     try:
         os.mkdir(CHART_DIR_NAME)
     except FileExistsError:
-        err = f'''Cannot render helm chart because Directory ./{CHART_DIR_NAME} already exists.
-        If you really wanna do this again, use the -f option'''
-        error(err)
-        ctx.exit(1)
+        if not template_only:
+            err = f'''Cannot render helm chart because Directory ./{CHART_DIR_NAME} already exists.
+            If you really wanna do this again, use the -f option'''
+            error(err)
+            ctx.exit(1)
 
     for f in find(TEMPLATE_DIR):
+        if is_values_file(f) and template_only:
+            continue
         render_dest = join(CHART_DIR_NAME, f.replace('.j2', '', 1))
         if f.endswith('.j2'):
             template = template_env.get_template(basename(f))
@@ -80,18 +86,10 @@ def init(ctx, appname, lain_yaml, force):
     if res.returncode:
         ctx.exit(res.returncode)
 
-    toast = f'''A helm chart is generated under the ./{CHART_DIR_NAME} directory. What's next?
-
-    * Review ./{CHART_DIR_NAME}/values.yaml
-    * If this app needs secret files or env, you should create them:
-        # add env to Kubernetes Secret
-        lain env edit
-        # add secret files to Kubernetes Secret
-        lain use [CLUSTER]
-        lain secret add [FILE]
-    * If this app uses `[appname].lain` services, ack and substitute them with [appname]-web, provided they have already been deployed on lain4
-    '''
-    goodjob(toast)
+    if template_only:
+        template_update_toast()
+    else:
+        init_done_toast()
 
 
 @lain.command()

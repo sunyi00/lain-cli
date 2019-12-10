@@ -268,6 +268,32 @@ def too_much_logs_headsup():
     error(headsup)
 
 
+init_done_str = f'''a helm chart is generated under the ./{CHART_DIR_NAME} directory. what's next?
+* review ./{CHART_DIR_NAME}/values.yaml
+* if this app needs cluster-specific secret files or env, you should create them:
+    lain use [CLUSTER]
+    # add env to Kubernetes Secret
+    lain env edit
+    # add secret files to Kubernetes Secret
+    lain secret add [FILE]
+* if this app uses `[appname].lain` services, ack and substitute them with [appname]-web, provided they have already been deployed on lain4
+'''
+
+
+def init_done_toast():
+    goodjob(init_done_str)
+
+
+template_update_done_str = '''helm chart template has been updated, you should study the diff and see if there's anything you want to use in {CHART_DIR_NAME}/values.yaml
+
+'''
+
+
+def template_update_toast():
+    goodjob(template_update_done_str)
+    subprocess_run(['git', 'diff'])
+
+
 class Registry:
     """this client deals with legacy lain registries, it filters out legacy
     data from the registry API"""
@@ -887,3 +913,22 @@ class KVPairType(click.ParamType):
             return (k, v)
         except (AttributeError, ValueError):
             self.fail("expected something like FOO=BAR, got " f"{value!r} of type {type(value).__name__}", param, ctx,)
+
+
+def is_values_file(fname):
+    """
+    >>> is_values_file('foo/bar/values.yaml')
+    True
+    >>> is_values_file('values.yaml.j2')
+    True
+    >>> is_values_file('values-future.yaml')
+    True
+    >>> is_values_file('values-future.yml')
+    True
+    >>> is_values_file('deployment.yml.j2')
+    False
+    """
+    fname = basename(fname)
+    if fname.startswith('values.yml') or fname.startswith('values.yaml'):
+        return True
+    return False

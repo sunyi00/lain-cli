@@ -27,6 +27,7 @@ spec:
       hostAliases:
         {{- toYaml $.Values.hostAliases | nindent 8 }}
       {{- end }}
+      terminationGracePeriodSeconds: {{ default 30 $deployment.terminationGracePeriodSeconds }}
       containers:
         - name: {{ $deployName }}
           command:

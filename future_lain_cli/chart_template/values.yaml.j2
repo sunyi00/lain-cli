@@ -68,6 +68,8 @@ deployments:
     # 比如用 root:
     # podSecurityContext: {'runAsUser': 0}
     podSecurityContext: {}
+    # 如果你的应用需要更长的退出时间, 则修改这个值
+    terminationGracePeriodSeconds: 70
     {%- endif %}
     {%- if loop.first %}
     # 关于资源分配:
