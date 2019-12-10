@@ -55,6 +55,10 @@ curl 127.0.0.1:31080/api/v1/ -H 'Host: docs.einplus.cn'
 # lain*.yaml 在迁移完成以后, 可以删除, chart/values.yaml 里包含 lain build 等命令所需要的信息
 ```
 
+## values.yaml
+
+在 helm chart 里, values.yaml 记载着所有渲染 Kubernetes manifests 需要的配置信息, 至于如何书写, 请见 [values.yaml 模板](https://github.com/ein-plus/lain-cli/blob/master/future_lain_cli/chart_template/values.yaml.j2).
+
 ## 云平台功能
 
 * lain deploy 的功能将会由 helm 来实现, 将会 subprocess 里调用 helm, 如果缺少可执行文件或者版本不符合要求, 将会从阿里云 oss 上下载

@@ -284,8 +284,8 @@ def init_done_toast():
     goodjob(init_done_str)
 
 
-template_update_done_str = '''helm chart template has been updated, you should study the diff and see if there's anything you want to use in {CHART_DIR_NAME}/values.yaml
-
+template_update_done_str = '''helm chart template has been updated, you should study the diff and see if there's anything you want to use in {CHART_DIR_NAME}/values.yaml.
+also, see https://github.com/ein-plus/lain-cli/blob/master/future_lain_cli/chart_template/values.yaml.j2 for usage
 '''
 
 

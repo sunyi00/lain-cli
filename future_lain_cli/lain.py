@@ -35,6 +35,8 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
 @click.option('--verbose', '-v', is_flag=True)
 @click.pass_context
 def lain(ctx, silent, verbose):
+    """a tool that helps you manage helm charts and kubectl.
+    for more, see https://github.com/ein-plus/lain-cli"""
     ctx.obj['silent'] = silent
     ctx.obj['verbose'] = verbose
     try:
