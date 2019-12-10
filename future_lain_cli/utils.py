@@ -248,6 +248,26 @@ def deploy_toast():
     goodjob(headsup)
 
 
+too_much_logs_headsup_str = '''if lain logs doesn't work for you, you can always use kubectl directly like this:
+    kubectl logs -f --tail 50 {{ podname }}
+{% if kibana %}
+or go to kibana:
+    http://{{ kibana }}/app/logtrail#/?q=kubernetes.pod_name.keyword:{{ appname }}*&h=All&t=Now&i=logstash-*
+{%- endif %}
+'''
+too_much_logs_headsup_template = template_env.from_string(too_much_logs_headsup_str)
+
+
+def too_much_logs_headsup():
+    # kubectl cannot tail from more than 8 log streams, when that happens,
+    # print a help message to redirect users to kibana, if applicable
+    ctx = context()
+    ctx.obj.update(tell_cluster_info())
+    podname = pick_pod()
+    headsup = too_much_logs_headsup_template.render(podname=podname, **ctx.obj)
+    error(headsup)
+
+
 class Registry:
     """this client deals with legacy lain registries, it filters out legacy
     data from the registry API"""

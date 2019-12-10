@@ -15,16 +15,17 @@ from future_lain_cli.utils import (CHART_DIR_NAME, FUTURE_CLUSTERS,
                                    HELM_WEIRD_STATE, TEMPLATE_DIR, KVPairType,
                                    Registry, deploy_toast, dump_secret, echo,
                                    ensure_absent, ensure_helm_initiated,
-                                   ensure_resource_initiated, error,
-                                   example_lain_yaml, find, get_app_status,
-                                   goodjob, helm, kubectl, kubectl_apply,
-                                   kubectl_edit, legacy_lain, pick_pod,
-                                   populate_helm_context,
+                                   ensure_resource_initiated, ensure_str,
+                                   error, example_lain_yaml, find,
+                                   get_app_status, goodjob, helm, kubectl,
+                                   kubectl_apply, kubectl_edit, legacy_lain,
+                                   pick_pod, populate_helm_context,
                                    populate_helm_context_from_lain_yaml,
-                                   tell_best_deploy, tell_cluster,
-                                   tell_cluster_info, tell_cluster_values_file,
+                                   tell_best_deploy, tell_cluster_info,
+                                   tell_cluster_values_file,
                                    tell_helm_set_clause, tell_image_tag,
-                                   tell_secret, template_env, warn, yadu)
+                                   tell_secret, template_env,
+                                   too_much_logs_headsup, warn, yadu)
 
 
 @click.group()
@@ -127,7 +128,9 @@ def logs(ctx, deploy, tail):
     else:
         selector = f'app.kubernetes.io/name={appname}'
 
-    kubectl('logs', '-f', f'--tail={tail}', '-l', selector, timeout=0)
+    res = kubectl('logs', '-f', f'--tail={tail}', '-l', selector, timeout=0)
+    if res.returncode:
+        too_much_logs_headsup()
 
 
 @lain.command()
