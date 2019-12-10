@@ -21,14 +21,24 @@ def events_text():
     pod_name = pick_pod(phase='Failed')
     if pod_name:
         events = kubectl('get', 'pod', f'{pod_name}', '-ojsonpath={.status.containerStatuses..message}', capture_output=True)
-        return ensure_str(events.stdout)
+        res = ensure_str(events.stdout)
+        if res:
+            return res
+        logs = kubectl('logs', '--tail=50', f'{pod_name}', capture_output=True)
+        return ensure_str(logs.stdout)
     return 'everything under control'
 
 
 def pod_text():
     ctx = context()
     appname = ctx.obj['appname']
-    res = kubectl('get', 'po', '-o=wide', '--field-selector=status.phase!=Succeeded', '-l', f'app.kubernetes.io/name={appname}', capture_output=True)
+    res = kubectl(
+        'get', 'po', '-o=wide',
+        # add this sort so that abnormal pods appear on top
+        '--sort-by={.status.phase}',
+        '--field-selector=status.phase!=Succeeded',
+        '-l', f'app.kubernetes.io/name={appname}',
+        capture_output=True)
     return ensure_str(res.stdout)
 
 
@@ -98,7 +108,7 @@ def build(refresh_interval=2):
     pod_container = HSplit([
         Win(
             height=1,
-            content=Title(f'kubectl get po -o=wide --field-selector=status.phase!=Succeeded -l app.kubernetes.io/name={appname}'),
+            content=Title(f'kubectl get po -o=wide --sort-by={{.status.phase}} --field-selector=status.phase!=Succeeded -l app.kubernetes.io/name={appname}'),
         ),
         pod_win,
     ])
